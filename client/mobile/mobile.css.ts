@@ -1,231 +1,19 @@
-window.__ModuleLoader__.load({
-  id: "dsh-pocket",
-  factory: (require) => {
-    var module = { exports: {} };
-    var exports = module.exports;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name2 in all)
-    __defProp(target, name2, { get: all[name2], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// client/index.jsx
-var index_exports = {};
-__export(index_exports, {
-  apply: () => apply,
-  inject: () => inject,
-  name: () => name,
-  redactStatus: () => redactStatus
-});
-module.exports = __toCommonJS(index_exports);
-var import_react2 = require("react");
-
-// client/api.js
-var POCKET_RPC_CHANNEL = "/dsh-pocket";
-var POCKET_ENDPOINTS = Object.freeze({
-  status: "pocket.status",
-  tunnelStart: "tunnel.start",
-  tunnelStop: "tunnel.stop"
-});
-function redactStatus(s) {
-  return {
-    proxyRunning: s?.proxyRunning === true,
-    proxyPort: s?.proxyPort ?? null,
-    lanUrl: s?.lanUrl ?? null,
-    lanQr: s?.lanQr ?? null,
-    tunnelRunning: s?.tunnelRunning === true,
-    tunnelUrl: s?.tunnelUrl ?? null,
-    tunnelQr: s?.tunnelQr ?? null,
-    dshPort: s?.dshPort ?? null
-  };
-}
-
-// client/mobile/MobileNavToggle.tsx
-var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-function MobileNavToggle({ toggleSidebar, t }) {
-  const toggleExplorer = () => {
-    const frame = document.querySelector('[data-mobile-nav="frame"]');
-    if (frame === null) return;
-    if (frame.hasAttribute("data-aionui-explorer-open")) {
-      frame.removeAttribute("data-aionui-explorer-open");
-    } else {
-      frame.setAttribute("data-aionui-explorer-open", "");
-    }
-  };
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      "data-mobile-nav": "toggle",
-      "aria-label": t("open"),
-      title: t("open"),
-      onClick: () => toggleSidebar()
-    },
-    /* @__PURE__ */ React.createElement(import_dsh_client_ui_primitives.IconPanelLeftOutline16, { size: 16 })
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      "data-mobile-nav": "files",
-      "aria-label": t("files"),
-      title: t("files"),
-      onClick: toggleExplorer
-    },
-    /* @__PURE__ */ React.createElement(import_dsh_client_ui_primitives.IconFolderOpenOutline16, { size: 16 })
-  ));
-}
-
-// client/mobile/MobileNavOverlay.tsx
-var import_react = require("react");
-var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
-var MOBILE_QUERY = "(max-width: 1023px)";
-function useMobile() {
-  const [mobile, setMobile] = (0, import_react.useState)(() => window.matchMedia(MOBILE_QUERY).matches);
-  (0, import_react.useEffect)(() => {
-    const query = window.matchMedia(MOBILE_QUERY);
-    const onChange = (event) => setMobile(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-  return mobile;
-}
-function findFrame() {
-  return document.querySelector("[data-shell-overlay]")?.parentElement ?? null;
-}
-function MobileNavOverlay({ toggleSidebar, t }) {
-  const mobile = useMobile();
-  const [open, setOpen] = (0, import_react.useState)(false);
-  const [fabVisible, setFabVisible] = (0, import_react.useState)(false);
-  (0, import_react.useLayoutEffect)(() => {
-    if (!mobile) {
-      setOpen(false);
-      return;
-    }
-    const frame = findFrame();
-    if (frame === null) return;
-    frame.setAttribute("data-mobile-nav", "frame");
-    const sync = () => setOpen(!frame.hasAttribute("data-sidebar-collapsed"));
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(frame, { attributes: true, attributeFilter: ["data-sidebar-collapsed"] });
-    return () => {
-      observer.disconnect();
-      frame.removeAttribute("data-mobile-nav");
-    };
-  }, [mobile]);
-  (0, import_react.useEffect)(() => {
-    if (!mobile) {
-      setFabVisible(false);
-      return;
-    }
-    const sync = () => setFabVisible(document.querySelector('[data-phase="active"]') === null);
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["data-phase"]
-    });
-    return () => observer.disconnect();
-  }, [mobile]);
-  (0, import_react.useEffect)(() => {
-    if (!mobile || !open) return;
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && document.querySelector('[aria-modal="true"]') === null) toggleSidebar();
-    };
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [mobile, open, toggleSidebar]);
-  (0, import_react.useEffect)(() => {
-    if (!mobile || !open) return;
-    const onDrawerClick = (event) => {
-      if (document.querySelector('[aria-modal="true"]') !== null) return;
-      const target = event.target;
-      if (target === null) return;
-      const drawer = document.querySelector('[data-mobile-nav="frame"] > :first-child');
-      if (drawer === null || !drawer.contains(target)) return;
-      if (target.closest('[class*="sessionRow"] button') !== null) return;
-      const navigates = target.closest(
-        'button[data-dsh-taskboard-entry], button[data-dsh-ssh-entry], [class*="newSession"], [class*="sessionRow"], [class*="searchResultRow"], [class*="searchResultWorkspace"]'
-      );
-      if (navigates !== null) toggleSidebar();
-    };
-    document.addEventListener("click", onDrawerClick, true);
-    return () => document.removeEventListener("click", onDrawerClick, true);
-  }, [mobile, open, toggleSidebar]);
-  if (!mobile) return null;
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, open && /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      "data-mobile-nav": "backdrop",
-      role: "button",
-      "aria-label": t("backdrop"),
-      onClick: () => toggleSidebar()
-    }
-  ), fabVisible && !open && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      "data-mobile-nav": "fab",
-      "aria-label": t("open"),
-      title: t("open"),
-      onClick: () => toggleSidebar()
-    },
-    /* @__PURE__ */ React.createElement(import_dsh_client_ui_primitives2.IconPanelLeftOutline16, { size: 18 })
-  ));
-}
-
-// client/mobile/MobileDrawerFooter.tsx
-var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
-function MobileDrawerFooter({ useSessions, downloadSessionLog, toggleSidebar, t }) {
-  const sessionId = useSessions((state) => state.current);
-  const openExplorer = () => {
-    document.querySelector('[data-mobile-nav="frame"]')?.setAttribute("data-aionui-explorer-open", "");
-    toggleSidebar();
-  };
-  return /* @__PURE__ */ React.createElement("div", { "data-mobile-nav": "drawer-actions" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      "data-mobile-nav": "explorer",
-      "aria-label": t("files"),
-      title: t("files"),
-      onClick: openExplorer
-    },
-    /* @__PURE__ */ React.createElement(import_dsh_client_ui_primitives3.IconPanelLeftOutline16, { size: 14 }),
-    /* @__PURE__ */ React.createElement("span", null, t("files"))
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      "data-mobile-nav": "session-log",
-      "aria-label": t("sessionLog"),
-      title: t("sessionLog"),
-      disabled: sessionId === void 0,
-      onClick: () => {
-        if (sessionId !== void 0) downloadSessionLog(sessionId);
-      }
-    },
-    /* @__PURE__ */ React.createElement(import_dsh_client_ui_primitives3.IconDownloadOutline16, { size: 14 }),
-    /* @__PURE__ */ React.createElement("span", null, t("sessionLog"))
-  ));
-}
-
-// client/mobile/mobile.css.ts
-var MOBILE_CSS = `
+/**
+ * Mobile stylesheet for the DSH web shell.
+ *
+ * Hooks are the stable framework attributes only — no hashed classes:
+ * - `[data-mobile-nav="frame"]`     our marker on the AppFrame element (value-scoped so
+ *                                   it never matches the plugin's own controls)
+ * - `[data-sidebar-collapsed]`     AppFrame: sidebar is in the compact rail state
+ * - `[data-side="sidebar"|"details"]` AppFrame drag handles
+ * - `[data-shell-overlay]`         AppFrame overlay layer (used to locate the frame)
+ * - `[data-phase]`                 conversation root phase (hero|active|settling)
+ *
+ * Below the official auto-collapse breakpoint (1024px) the rail is removed
+ * from the grid entirely; the sidebar column becomes an overlay drawer that
+ * slides in when the frame leaves the collapsed state (narrowExpanded).
+ */
+export const MOBILE_CSS = `
 /* ---------- base control styles (rendered at any width, hidden where unused) ---------- */
 
 [data-mobile-nav="toggle"],
@@ -391,8 +179,8 @@ var MOBILE_CSS = `
      hugs the sidebar content exactly (the wide sidebar carries an inline
      width, ~280px): a fixed 92vw box would leave a white strip where the
      container background shows beside the content.
-     Closed state: translateX(-110%) \u2014 more than -100% of the max-content
-     width \u2014 guarantees the whole drawer (and its shadow, had it one) leaves
+     Closed state: translateX(-110%) — more than -100% of the max-content
+     width — guarantees the whole drawer (and its shadow, had it one) leaves
      the viewport. A mere -100% leaves a sliver on screen; -105% (as used
      before) left 14px of the drawer plus a long 32px-blur shadow gradient
      visible along the left edge of the main UI. No box-shadow at all: the
@@ -419,7 +207,7 @@ var MOBILE_CSS = `
   }
 
   /* Expanded state (frame without data-sidebar-collapsed) slides the drawer in.
-     The open state must be transform:none \u2014 NOT translateX(0): an identity
+     The open state must be transform:none — NOT translateX(0): an identity
      transform still makes the drawer the containing block for fixed-position
      descendants (the settings dialog's .VOzbGW_overlay is portaled into the
      sidebar DOM). With the identity transform the wide settings sheet
@@ -442,7 +230,7 @@ var MOBILE_CSS = `
      type. On a phone: shrink the type a notch and widen the lines by
      trimming the gutters (the sidebar drawer list keeps its size). The
      flow's scroll container is the only _scroll element holding markdown
-     <p> paragraphs \u2014 the composer's own scroll (textarea) is excluded
+     <p> paragraphs — the composer's own scroll (textarea) is excluded
      via :has(p). */
   /* The official main scroll body reserves scrollbar-gutter for desktop
      scrollbars (8px), which shoves every column off-center on a phone.
@@ -460,7 +248,7 @@ var MOBILE_CSS = `
     height: 0 !important;
   }
   /* Message action rows (copy / run-time badges) can overflow the right
-     edge on narrow screens \u2014 keep them inside the message width. */
+     edge on narrow screens — keep them inside the message width. */
   [data-phase] [class$="_actions"] {
     overflow: hidden !important;
   }
@@ -480,7 +268,7 @@ var MOBILE_CSS = `
   /* The official markdown styles set an explicit 16px on paragraphs and
      list items, so the container's inherited 15px is not enough. User
      messages render their text in a div whose class carries _text_
-     (16px too) \u2014 cover it as well. */
+     (16px too) — cover it as well. */
   [data-phase] [class$="_scroll"]:has(p) p,
   [data-phase] [class$="_scroll"]:has(p) li,
   [data-phase] [class$="_scroll"]:has(p) [class*="_text_"] {
@@ -552,11 +340,11 @@ var MOBILE_CSS = `
 
   /* --- Settings dialog on mobile ---
      Desktop: 800px two-column flex (188px nav + content). Mobile: a
-     near-full-width sheet \u2014 nav tabs wrap into rows on top, option rows
+     near-full-width sheet — nav tabs wrap into rows on top, option rows
      stay horizontal (title+description left, control right). Structural
      selectors are scoped to the unique aria-modal dialog; every
      settings-specific rule is gated with
-     :has(> :first-child > :last-child > button) \u2014 the settings nav tab
+     :has(> :first-child > :last-child > button) — the settings nav tab
      list holds <button> tabs, so the transient export dialog (the same
      primitives Modal, header(title+close)+description+body) keeps its
      official centered card layout. Requires :has() support
@@ -598,7 +386,7 @@ var MOBILE_CSS = `
     max-width: calc(100vw - 32px) !important;
   }
   /* Nav bar: hide the "Settings" caption (redundant on a full-width sheet)
-     and wrap the tab list so every tab is visible \u2014 a horizontal scroll cut
+     and wrap the tab list so every tab is visible — a horizontal scroll cut
      the last tab ("Plugins") off with no affordance to scroll. */
   [aria-modal="true"]:has(> :first-child > :last-child > button):not(:has([role="navigation"])) > :first-child {
     width: 100% !important;
@@ -673,13 +461,13 @@ var MOBILE_CSS = `
          plus absolute drag handles to [data-dsh-frame]; its 5-track inline
          grid is already overridden above, but the handles and columns would
          still float over the main UI. On mobile the columns leave the grid
-         as floating bottom sheets and keep their own visibility state \u2014
+         as floating bottom sheets and keep their own visibility state —
          the suite's collapse chevron / preview tabs still work, so no
          feature is lost. The task-board / ssh plugins inject sidebar
          entries and center-column takeover panels; the entries need
          spacing and the kanban needs scrollable columns. */
 
-  /* Touch devices: the drag handles are useless \u2014 the floating expand
+  /* Touch devices: the drag handles are useless — the floating expand
      button is the opener. */
   .aionui-explorer-handle,
   .aionui-preview-handle {
@@ -700,7 +488,7 @@ var MOBILE_CSS = `
     border-left: none !important;
   }
   /* Explorer (file tree) bottom sheet: bottom edge aligned exactly with
-     the composer card's bottom line \u2014 the card sits 36px above the
+     the composer card's bottom line — the card sits 36px above the
      viewport bottom (8px composer padding + the 28px stats strip below
      the card), so the sheet uses the same 36px bottom offset. */
   [data-aionui-explorer-col] {
@@ -754,13 +542,13 @@ var MOBILE_CSS = `
     visibility: hidden !important;
   }
   /* The suite's own expand button reads the store state we bypass on
-     mobile \u2014 hide it; the header Files action is the opener. */
+     mobile — hide it; the header Files action is the opener. */
   .aionui-floating-expand {
     display: none !important;
   }
 
   /* dsh-web-ui sidebar entries (task board / ssh) sit flush against each
-     other \u2014 give the injected rows breathing room. */
+     other — give the injected rows breathing room. */
   button[data-dsh-taskboard-entry],
   button[data-dsh-ssh-entry] {
     margin-bottom: 8px !important;
@@ -810,7 +598,7 @@ var MOBILE_CSS = `
      (today / month / total). The counters use tabular nowrap figures whose
      min-content width overflows the ~336px panel body on a phone: figures
      clip at the row's edges and the panel grows a horizontal scrollbar.
-     Stack the three counters vertically \u2014 full-width rows, so the figures
+     Stack the three counters vertically — full-width rows, so the figures
      always fit. */
 
   [class*="usg_"][class$="_statsRow"] {
@@ -919,7 +707,7 @@ var MOBILE_CSS = `
      The whale-girl pet (dsh-pet) floats at the viewport corner with a
      persisted, draggable position. On phones the pet is scaled down so
      it does not dominate the screen; the plugin's own drag + persist
-     still work (the position itself is left alone \u2014 the mobile default
+     still work (the position itself is left alone — the mobile default
      position is seeded via the pet API to just above the composer). */
 
   body > [class$="_float"]:has([class$="_sprite"][role="button"]) {
@@ -938,7 +726,7 @@ var MOBILE_CSS = `
      cache) is long. The client marks the exact row with
      [data-mobile-nav="stats"] (text-anchored, hashed classes can't be
      targeted). Layout: ONE fixed-height (28px) flex strip that scrolls
-     horizontally \u2014 the full metrics stream stays reachable by swiping,
+     horizontally — the full metrics stream stays reachable by swiping,
      the row never grows vertically, no ellipsis or fade, 12px gaps
      between metric groups, a 2px scrollbar as the swipe affordance. */
 
@@ -1007,7 +795,7 @@ var MOBILE_CSS = `
      height (2 lines on the hero empty state) on the textarea's scroll/grow
      wrappers. :placeholder-shown lets us collapse the EMPTY state to one
      line with !important; as soon as the user types, the pseudo-class no
-     longer matches and the autosizer's inline height takes over again \u2014 so
+     longer matches and the autosizer's inline height takes over again — so
      multi-line growth keeps working. */
   [data-phase="hero"] textarea:placeholder-shown {
     height: 28px !important;
@@ -1041,317 +829,4 @@ var MOBILE_CSS = `
     display: none !important;
   }
 }
-`;
-
-// client/mobile/locales.ts
-var NS = "mobileNav";
-var zh = {
-  "open": "\u6253\u5F00\u76EE\u5F55",
-  "close": "\u6536\u8D77\u76EE\u5F55",
-  "backdrop": "\u70B9\u51FB\u5173\u95ED\u76EE\u5F55",
-  "sessionLog": "\u5BFC\u51FA\u4F1A\u8BDD\u65E5\u5FD7",
-  "files": "\u6587\u4EF6\u6D4F\u89C8"
-};
-var en = {
-  "open": "Open directory",
-  "close": "Close directory",
-  "backdrop": "Click to close directory",
-  "sessionLog": "Session log",
-  "files": "Files"
-};
-
-// client/mobile/mobile-apply.tsx
-function mobileApply(ctx) {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), "dsh-mobile-nav: dictionaries");
-  ctx.effect(() => {
-    const tag = document.createElement("style");
-    tag.dataset.plugin = "@dsh-external/dsh-mobile-nav";
-    tag.dataset.pluginCss = "@dsh-external/dsh-mobile-nav/mobile.css";
-    tag.textContent = MOBILE_CSS;
-    document.head.appendChild(tag);
-    return () => {
-      tag.remove();
-    };
-  }, "dsh-mobile-nav: styles");
-  ctx.effect(() => {
-    const narrow = window.matchMedia("(max-width: 1023px)");
-    const viewport = document.querySelector('meta[name="viewport"]');
-    const originalViewport = viewport?.content ?? "";
-    const themeMeta = document.createElement("meta");
-    themeMeta.name = "theme-color";
-    const bodyBg = () => getComputedStyle(document.body).backgroundColor;
-    const sync = () => {
-      if (viewport !== null) viewport.content = "width=device-width, initial-scale=1, viewport-fit=cover";
-      themeMeta.content = bodyBg();
-      if (themeMeta.parentElement === null) document.head.appendChild(themeMeta);
-    };
-    const restore = () => {
-      if (viewport !== null) viewport.content = originalViewport;
-      themeMeta.remove();
-    };
-    const onGestureStart = (event) => event.preventDefault();
-    if (narrow.matches) sync();
-    const onChange = (event) => event.matches ? sync() : restore();
-    narrow.addEventListener("change", onChange);
-    const observer = new MutationObserver(() => {
-      if (narrow.matches) themeMeta.content = bodyBg();
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ["data-ds-dark-theme"] });
-    document.addEventListener("gesturestart", onGestureStart);
-    return () => {
-      narrow.removeEventListener("change", onChange);
-      observer.disconnect();
-      document.removeEventListener("gesturestart", onGestureStart);
-      restore();
-    };
-  }, "dsh-mobile-nav: status bar theme + viewport + zoom guard");
-  ctx.effect(() => {
-    const narrow = window.matchMedia("(max-width: 1023px)");
-    if (!narrow.matches) return () => {
-    };
-    const onChevronClick = (event) => {
-      const target = event.target;
-      if (target === null || !target.closest(".aionui-collapse-chevron")) return;
-      document.querySelector('[data-mobile-nav="frame"]')?.removeAttribute("data-aionui-explorer-open");
-    };
-    document.addEventListener("click", onChevronClick, true);
-    return () => document.removeEventListener("click", onChevronClick, true);
-  }, "dsh-mobile-nav: aionui explorer close marker");
-  ctx.effect(() => {
-    const narrow = window.matchMedia("(max-width: 1023px)");
-    if (!narrow.matches) return () => {
-    };
-    const frame = () => document.querySelector('[data-mobile-nav="frame"]');
-    const onTap = (event) => {
-      const target = event.target;
-      if (target === null) return;
-      if (target.closest('[data-aionui-explorer-col] [class$="_treeRow"]') === null) return;
-      frame()?.setAttribute("data-aionui-preview-open", "");
-    };
-    const sync = () => {
-      const pv = document.querySelector("[data-aionui-preview-col]");
-      if (pv === null) return;
-      if (getComputedStyle(pv).visibility === "hidden") frame()?.removeAttribute("data-aionui-preview-open");
-    };
-    document.addEventListener("click", onTap, true);
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["style"] });
-    sync();
-    return () => {
-      document.removeEventListener("click", onTap, true);
-      observer.disconnect();
-    };
-  }, "dsh-mobile-nav: preview sheet open marker");
-  ctx.effect(() => {
-    const narrow = window.matchMedia("(max-width: 1023px)");
-    if (!narrow.matches) return () => {
-    };
-    const moveTps = (stats) => {
-      if ([...stats.children].some((c) => /^TPS\s+\d/.test((c.textContent ?? "").trim()))) return;
-      const stack = stats.closest('[class$="_composerStack"]');
-      if (stack === null) return;
-      for (const el of stack.querySelectorAll("div")) {
-        const text = (el.textContent ?? "").trim();
-        if (!/^TPS\s+\d/.test(text)) continue;
-        if (el.children.length > 0) continue;
-        stats.appendChild(el);
-        return;
-      }
-    };
-    const mark = () => {
-      for (const root of document.querySelectorAll('[data-phase] [class$="_root"]')) {
-        if (root.closest('[class$="_composerStack"]') === null) continue;
-        const text = root.textContent ?? "";
-        if (!/(turns|steps|\bLLM\b|轮|步)/.test(text)) continue;
-        if (root.querySelector("textarea") !== null) continue;
-        root.setAttribute("data-mobile-nav", "stats");
-        moveTps(root);
-        return;
-      }
-    };
-    const observer = new MutationObserver(mark);
-    observer.observe(document.body, { childList: true, subtree: true });
-    mark();
-    return () => {
-      observer.disconnect();
-    };
-  }, "dsh-mobile-nav: stats line marker");
-  ctx.effect(() => {
-    const narrow = window.matchMedia("(max-width: 1023px)");
-    if (!narrow.matches) return () => {
-    };
-    const cols = ["[data-aionui-explorer-col]", "[data-aionui-preview-col]"];
-    const seen = /* @__PURE__ */ new Map();
-    const play = (el) => {
-      el.animate(
-        [
-          { opacity: 0, transform: "translateY(28px)" },
-          { opacity: 1, transform: "none" }
-        ],
-        { duration: 280, easing: "cubic-bezier(.16, 1, .3, 1)", fill: "backwards" }
-      );
-    };
-    const check = () => {
-      for (const sel of cols) {
-        const el = document.querySelector(sel);
-        if (el === null) continue;
-        const visible = getComputedStyle(el).visibility === "visible";
-        const prev = seen.get(sel) ?? false;
-        if (visible && !prev) play(el);
-        seen.set(sel, visible);
-      }
-    };
-    const observer = new MutationObserver(check);
-    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["style", "class", "data-aionui-explorer-open"] });
-    check();
-    return () => {
-      observer.disconnect();
-    };
-  }, "dsh-mobile-nav: sheet rise animation replay");
-  ctx.slots.inject("conversation.session.header.actions", () => ctx.slots.register({
-    name: "conversation.session.header.actions",
-    id: "mobile-nav-toggle",
-    order: 10,
-    locale: NS,
-    inject: () => ({
-      toggleSidebar: () => ctx.layout.toggleSidebar()
-    })
-  }, MobileNavToggle));
-  ctx.slots.inject("shell.overlay", () => ctx.slots.register({
-    name: "shell.overlay",
-    id: "mobile-nav-overlay",
-    order: 10,
-    locale: NS,
-    inject: () => ({
-      toggleSidebar: () => ctx.layout.toggleSidebar()
-    })
-  }, MobileNavOverlay));
-  ctx.slots.inject("sidebar.footer.action", () => ctx.slots.register({
-    name: "sidebar.footer.action",
-    id: "mobile-nav-session-log",
-    order: 10,
-    locale: NS,
-    inject: () => ({
-      downloadSessionLog: (sessionId) => ctx.sessionLogDownload.download(sessionId),
-      toggleSidebar: () => ctx.layout.toggleSidebar()
-    })
-  }, MobileDrawerFooter));
-}
-
-// client/index.jsx
-var name = "dsh-pocket";
-var inject = ["slots", "connection", "layout", "locale", "sessionLogDownload"];
-var styles = {
-  card: { background: "var(--dsw-alias-bg-layer-1,#fff)", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", borderRadius: 12, padding: "14px 16px", maxWidth: 480 },
-  block: { borderTop: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", marginTop: 12, paddingTop: 12 },
-  muted: { color: "var(--dsw-alias-label-tertiary,#8b93a1)", fontSize: 12 },
-  code: { fontFamily: "ui-monospace,Menlo,monospace", fontSize: 12, wordBreak: "break-all", margin: "4px 0 8px" },
-  primary: { font: "inherit", cursor: "pointer", border: "none", background: "var(--dsw-alias-brand-primary,#4f6ef7)", color: "#fff", borderRadius: 8, padding: "6px 14px", fontSize: 13 },
-  btn: { font: "inherit", cursor: "pointer", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", background: "var(--dsw-alias-bg-layer-1,#fff)", borderRadius: 8, padding: "6px 14px", fontSize: 13 },
-  qr: { width: 220, height: 220, borderRadius: 8, border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", margin: "6px 0" },
-  warn: { color: "var(--dsw-alias-state-warn-primary,#b45309)", fontSize: 12 }
-};
-function PocketSettingsTab({ rpcCall }) {
-  const [status, setStatus] = (0, import_react2.useState)(null);
-  const [busy, setBusy] = (0, import_react2.useState)(false);
-  const [error, setError] = (0, import_react2.useState)(null);
-  const call = async (endpoint, payload) => {
-    const res = await rpcCall(endpoint, payload);
-    if (!res?.ok) throw new Error(res?.error?.message ?? "RPC failed");
-    return res.value;
-  };
-  const load = async () => {
-    try {
-      setStatus(await call(POCKET_ENDPOINTS.status, {}));
-    } catch {
-    }
-  };
-  (0, import_react2.useEffect)(() => {
-    load();
-    const t = setInterval(load, 3e3);
-    return () => clearInterval(t);
-  }, []);
-  const startTunnel = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setStatus(await call(POCKET_ENDPOINTS.tunnelStart, {}));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const stopTunnel = async () => {
-    try {
-      setStatus(await call(POCKET_ENDPOINTS.tunnelStop, {}));
-    } catch {
-    }
-  };
-  const lanUrl = status?.lanUrl;
-  const tunnelUrl = status?.tunnelUrl;
-  return (0, import_react2.createElement)(
-    "div",
-    { style: styles.card },
-    (0, import_react2.createElement)(
-      "div",
-      null,
-      (0, import_react2.createElement)("strong", null, "\u{1F4F1} \u624B\u673A\u8BBF\u95EE | Phone access"),
-      (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
-    ),
-    // 局域网
-    (0, import_react2.createElement)(
-      "div",
-      { style: styles.block },
-      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F4F6} \u5C40\u57DF\u7F51\uFF08\u540C\u4E00 WiFi\uFF09| LAN"),
-      lanUrl ? (0, import_react2.createElement)(
-        "div",
-        null,
-        (0, import_react2.createElement)("img", { src: status.lanQr, alt: "LAN QR", style: styles.qr }),
-        (0, import_react2.createElement)("div", { style: styles.code }, lanUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00")
-      ) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EE3\u7406\u672A\u5C31\u7EEA\u2026 | proxy starting\u2026")
-    ),
-    // 公网
-    (0, import_react2.createElement)(
-      "div",
-      { style: styles.block },
-      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F310} \u516C\u7F51\uFF08\u4EBA\u5728\u5916\u9762\uFF09| Anywhere"),
-      tunnelUrl ? (0, import_react2.createElement)(
-        "div",
-        null,
-        (0, import_react2.createElement)("img", { src: status.tunnelQr, alt: "Tunnel QR", style: styles.qr }),
-        (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u4F1A\u53D8\uFF09"),
-        (0, import_react2.createElement)("button", { style: styles.btn, onClick: stopTunnel }, "\u5173\u95ED\u516C\u7F51 | Stop")
-      ) : (0, import_react2.createElement)(
-        "div",
-        null,
-        (0, import_react2.createElement)("button", { style: styles.primary, onClick: startTunnel, disabled: busy }, busy ? "\u5F00\u542F\u4E2D\u2026\uFF08\u9996\u6B21\u9700\u4E0B\u8F7D cloudflared\uFF09" : "\u5F00\u542F\u516C\u7F51\u8BBF\u95EE | Enable anywhere"),
-        (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA")
-      )
-    ),
-    error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null
-  );
-}
-function apply(ctx) {
-  mobileApply(ctx);
-  const rpcCall = (endpoint, payload, signal) => ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
-  ctx.slots.inject(
-    "settings.plugins.tab",
-    () => ctx.slots.register(
-      {
-        name: "settings.plugins.tab",
-        id: "pocket",
-        order: 10,
-        label: "\u624B\u673A\u8BBF\u95EE",
-        inject: () => ({ rpcCall })
-      },
-      PocketSettingsTab
-    )
-  );
-}
-
-    return module.exports;
-  }
-});
+`

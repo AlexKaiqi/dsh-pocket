@@ -1,14 +1,16 @@
-// dsh-pocket 网页设置页签（设置 → 插件 → 手机访问）
+// dsh-pocket 网页客户端：
+//   1. 设置页签「手机访问」（局域网/公网二维码）
+//   2. 移动端适配（移植自 MIT 项目 dsh-web-mobile，见 client/mobile/LICENSE.dsh-web-mobile）
 //
-// 打开即显示局域网二维码；点「开启公网」出公网二维码。
-// 手机扫码打开的就是电脑上的 dsh web，实时同步。
+// 手机扫码打开的就是电脑上的 dsh web，实时同步；窄屏自动变成抽屉布局。
 
 import { createElement as h, useEffect, useState } from 'react';
 
 import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus } from './api.js';
+import { mobileApply } from './mobile/mobile-apply.tsx';
 
 const name = 'dsh-pocket';
-const inject = ['slots', 'connection'];
+const inject = ['slots', 'connection', 'layout', 'locale', 'sessionLogDownload'];
 
 const styles = {
   card: { background: 'var(--dsw-alias-bg-layer-1,#fff)', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', borderRadius: 12, padding: '14px 16px', maxWidth: 480 },
@@ -100,6 +102,9 @@ function PocketSettingsTab({ rpcCall }) {
 }
 
 export function apply(ctx) {
+  // 移动端适配（dsh-web-mobile 移植）：抽屉布局/触控/安全区，仅窄屏生效
+  mobileApply(ctx);
+
   const rpcCall = (endpoint, payload, signal) =>
     ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
 

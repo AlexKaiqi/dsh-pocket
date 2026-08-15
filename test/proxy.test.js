@@ -148,21 +148,3 @@ test('HTML 注入：非安全上下文 polyfill 只注入 HTML 文档，不碰 J
     await new Promise((r) => up.close(r));
   }
 });
-
-test('移动端适配注入：HTML 里包含抽屉 CSS 与引导 JS', async () => {
-  const up = createServer((req, res) => {
-    res.writeHead(200, { 'content-type': 'text/html' });
-    res.end('<!doctype html><head><title>x</title></head><body></body>');
-  });
-  await new Promise((r) => up.listen(0, '127.0.0.1', r));
-  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
-  try {
-    const html = await (await fetch(`http://127.0.0.1:${proxy.port}/`)).text();
-    assert.ok(html.includes('data-mobile-nav="frame"'), '移动端 CSS 注入');
-    assert.ok(html.includes('randomUUID'), 'polyfill 仍在');
-    assert.ok(html.includes('viewport-fit'), 'viewport 适配脚本注入');
-  } finally {
-    await proxy.close();
-    await new Promise((r) => up.close(r));
-  }
-});
