@@ -42,7 +42,6 @@ What it looks like — the phone shows the exact same UI as your computer, live:
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
 | 🧩 Zero-dependency install | One npm package, one settings tab — no core/adapter split, no account, no server |
 | 🔒 URL is the key | No public URL exposure in LAN mode; public URL rotates on every restart |
-| 🔔 Web Push | Phone notifications when a task finishes or fails (even with the page closed); requires the HTTPS public tunnel or localhost |
 
 ## 🚀 Usage
 
@@ -93,7 +92,6 @@ On the same page click "**Enable anywhere**" → wait for the tunnel (first run 
 | Nothing changed after install/update | **You must restart `dsh web`**; the running process still loads the old code |
 | `listen EADDRINUSE ... :3081` | A stale dsh-pocket process holds the port: `lsof -ti :3081 \| xargs kill -9`, then retry |
 | Version stuck below 1.x | `^0.x` ranges never jump to 1.x: update with `--latest` (`dsh plugin --profile web update dsh-pocket --latest -w`) |
-| No push on iOS Safari | Safari Web Push requires **"Add to Home Screen"** first, then open from the home-screen icon (Chrome/Android don't need this) |
 | Public `error 1033` | See "Public tunnel troubleshooting" below — usually a local proxy/VPN (Clash etc. TUN mode) killing the tunnel |
 | After "Restart dsh web", the page says the process is running in the background | The new process from in-page self-restart is a detached background process (not attached to your terminal) — that's the standard way to apply updates in-page; stop it with `lsof -ti :3080 \| xargs kill -9` (logs under `$DSH_HOME` as `dsh-pocket-restart-*.log`) |
 

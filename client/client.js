@@ -38,11 +38,6 @@ var POCKET_ENDPOINTS = Object.freeze({
   status: "pocket.status",
   tunnelStart: "tunnel.start",
   tunnelStop: "tunnel.stop",
-  pushVapidKey: "push.vapidKey",
-  pushSubscribe: "push.subscribe",
-  pushUnsubscribe: "push.unsubscribe",
-  pushStatus: "push.status",
-  pushSetEnabled: "push.setEnabled",
   version: "pocket.version",
   update: "pocket.update",
   restart: "pocket.restart"
@@ -1265,32 +1260,6 @@ function mobileApply(ctx) {
 // client/index.jsx
 var name = "dsh-pocket";
 var inject = ["slots", "connection", "layout", "locale", "sessionLogDownload"];
-async function setupPush(rpcCall) {
-  try {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
-    if (!window.isSecureContext) return "insecure";
-    const reg = await navigator.serviceWorker.register("/pocket-sw.js");
-    const vapid = await rpcCall(POCKET_ENDPOINTS.pushVapidKey, {});
-    if (!vapid?.ok) return "host-error";
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapid.value.publicKey)
-      });
-    }
-    const res = await rpcCall(POCKET_ENDPOINTS.pushSubscribe, { subscription: sub.toJSON() });
-    return res?.ok ? "on" : "host-error";
-  } catch {
-    return "error";
-  }
-}
-function urlBase64ToUint8Array(base64url) {
-  const pad = "=".repeat((4 - base64url.length % 4) % 4);
-  const b64 = (base64url + pad).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
 var styles = {
   card: { background: "var(--dsw-alias-bg-layer-1,#fff)", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", borderRadius: 12, padding: "14px 16px", maxWidth: 480 },
   block: { borderTop: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", marginTop: 12, paddingTop: 12 },
@@ -1305,8 +1274,6 @@ function PocketSettingsTab({ rpcCall }) {
   const [status, setStatus] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
-  const [pushEnabled, setPushEnabled] = (0, import_react2.useState)(true);
-  const [pushState, setPushState] = (0, import_react2.useState)("checking");
   const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
   const [restartNotice, setRestartNotice] = (0, import_react2.useState)(false);
   const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
@@ -1328,16 +1295,6 @@ function PocketSettingsTab({ rpcCall }) {
     load();
     const t = setInterval(load, 3e3);
     return () => clearInterval(t);
-  }, []);
-  (0, import_react2.useEffect)(() => {
-    (async () => {
-      try {
-        const s = await call(POCKET_ENDPOINTS.pushStatus, {});
-        setPushEnabled(s.enabled);
-        if (s.enabled) setPushState(await setupPush(rpcCall));
-      } catch {
-      }
-    })();
   }, []);
   (0, import_react2.useEffect)(() => {
     let alive = true;
@@ -1379,36 +1336,6 @@ function PocketSettingsTab({ rpcCall }) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? "ok" : "fail", output: r.output ?? r.error }));
     } catch (err) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: "fail", output: err.message }));
-    }
-  };
-  const enablePush = async () => {
-    try {
-      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
-      setPushEnabled(true);
-      setPushState(await setupPush(rpcCall));
-    } catch (err) {
-      setError(err?.message ?? "\u63A8\u9001\u5F00\u542F\u5931\u8D25 | failed to enable push");
-    }
-  };
-  const disablePush = async () => {
-    try {
-      try {
-        if ("serviceWorker" in navigator) {
-          const reg = await navigator.serviceWorker.getRegistration("/pocket-sw.js");
-          const sub = await reg?.pushManager?.getSubscription();
-          if (sub) {
-            const endpoint = sub.endpoint;
-            await sub.unsubscribe();
-            await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
-          }
-        }
-      } catch {
-      }
-      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
-      setPushEnabled(false);
-      setPushState("off");
-    } catch (err) {
-      setError(err?.message ?? "\u63A8\u9001\u5173\u95ED\u5931\u8D25 | failed to disable push");
     }
   };
   const startTunnel = async () => {
@@ -1519,22 +1446,6 @@ function PocketSettingsTab({ rpcCall }) {
           { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } },
           `\u23F3 ${tunnelStateDetail}\uFF08\u5DF2\u7B49\u5F85 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1e3)} \u79D2\uFF09\u2026`
         ) : (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA")
-      )
-    ),
-    // Web Push 状态 + 开关
-    (0, import_react2.createElement)(
-      "div",
-      { style: styles.block },
-      (0, import_react2.createElement)(
-        "div",
-        { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } },
-        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F514} \u63A8\u9001\u901A\u77E5 | Push notifications"),
-        pushEnabled ? (0, import_react2.createElement)("button", { style: styles.btn, onClick: disablePush }, "\u5173\u95ED | Off") : (0, import_react2.createElement)("button", { style: styles.primary, onClick: enablePush }, "\u5F00\u542F | On")
-      ),
-      (0, import_react2.createElement)(
-        "div",
-        { style: styles.muted },
-        !pushEnabled ? "\u5DF2\u5173\u95ED\uFF1Aagent \u8DD1\u5B8C\u4E0D\u4F1A\u63A8\u9001 | off: no notifications" : pushState === "on" ? "\u5DF2\u5F00\u542F\uFF1Aagent \u8DD1\u5B8C/\u51FA\u9519\u65F6\u624B\u673A\u6536\u5230\u901A\u77E5 | on: notified when tasks finish or fail" : pushState === "unsupported" ? "\u5DF2\u5F00\u542F\uFF08\u4F46\u5F53\u524D\u6D4F\u89C8\u5668\u4E0D\u652F\u6301\u63A8\u9001\uFF09| on, but this browser does not support push" : pushState === "insecure" ? "\u5DF2\u5F00\u542F\uFF0C\u4F46\u5F53\u524D\u8DEF\u5F84\u4E0D\u662F HTTPS\u2014\u2014\u63A8\u9001\u9700\u8981\u516C\u7F51\u96A7\u9053\u6216 localhost | on, but push needs HTTPS (public tunnel) or localhost" : pushState === "checking" ? "\u68C0\u67E5\u4E2D\u2026 | checking\u2026" : "\u63A8\u9001\u672A\u751F\u6548 | push not active"
       )
     ),
     error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null,

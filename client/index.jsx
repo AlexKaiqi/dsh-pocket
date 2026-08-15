@@ -1,9 +1,11 @@
 // dsh-pocket 网页客户端：
-//   1. 设置页签「手机访问」（局域网/公网二维码 + Web Push 状态）
+//   1. 设置页签「手机访问」（局域网/公网二维码 + 更新/重启提示）
 //   2. 移动端适配（移植自 MIT 项目 dsh-web-mobile，见 client/mobile/LICENSE.dsh-web-mobile）
-//   3. Web Push：注册 Service Worker + 订阅推送（agent 跑完/出错 → 手机通知）
 //
 // 手机扫码打开的就是电脑上的 dsh web，实时同步；窄屏自动变成抽屉布局。
+//
+// 注：Web Push 已移除——浏览器推送依赖 Google FCM（Chrome）等境外服务，
+// 国内直连被墙，普通用户用不了。专注扫码同屏这一件事。
 
 import { createElement as h, useEffect, useState } from 'react';
 
@@ -12,36 +14,6 @@ import { mobileApply } from './mobile/mobile-apply.tsx';
 
 const name = 'dsh-pocket';
 const inject = ['slots', 'connection', 'layout', 'locale', 'sessionLogDownload'];
-
-/** Web Push：注册 SW + 订阅（仅安全上下文可用：HTTPS 公网 / localhost）。 */
-async function setupPush(rpcCall) {
-  try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
-    if (!window.isSecureContext) return 'insecure'; // http://LAN-IP 无 Push API
-    const reg = await navigator.serviceWorker.register('/pocket-sw.js');
-    const vapid = await rpcCall(POCKET_ENDPOINTS.pushVapidKey, {});
-    if (!vapid?.ok) return 'host-error';
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapid.value.publicKey),
-      });
-    }
-    const res = await rpcCall(POCKET_ENDPOINTS.pushSubscribe, { subscription: sub.toJSON() });
-    return res?.ok ? 'on' : 'host-error';
-  } catch {
-    return 'error';
-  }
-}
-
-/** VAPID 公钥（base64url）→ Uint8Array（pushManager.subscribe 需要）。 */
-function urlBase64ToUint8Array(base64url) {
-  const pad = '='.repeat((4 - (base64url.length % 4)) % 4);
-  const b64 = (base64url + pad).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(b64);
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
 
 const styles = {
   card: { background: 'var(--dsw-alias-bg-layer-1,#fff)', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', borderRadius: 12, padding: '14px 16px', maxWidth: 480 },
@@ -58,8 +30,6 @@ function PocketSettingsTab({ rpcCall }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [pushEnabled, setPushEnabled] = useState(true); // 宿主开关
-  const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
   const [restartNotice, setRestartNotice] = useState(false); // 重启后提示
   const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result } | null
@@ -83,17 +53,6 @@ function PocketSettingsTab({ rpcCall }) {
     load();
     const t = setInterval(load, 3000);
     return () => clearInterval(t);
-  }, []);
-
-  // 读取宿主开关状态；已开启时同步检查浏览器订阅状态（否则刷新后一直显示"检查中…"）
-  useEffect(() => {
-    (async () => {
-      try {
-        const s = await call(POCKET_ENDPOINTS.pushStatus, {});
-        setPushEnabled(s.enabled);
-        if (s.enabled) setPushState(await setupPush(rpcCall));
-      } catch { /* 忽略瞬时失败 */ }
-    })();
   }, []);
 
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
@@ -141,39 +100,6 @@ function PocketSettingsTab({ rpcCall }) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? 'ok' : 'fail', output: r.output ?? r.error }));
     } catch (err) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: 'fail', output: err.message }));
-    }
-  };
-
-  // 开启推送：宿主开关开 + 浏览器订阅（安全上下文才有效）
-  const enablePush = async () => {
-    try {
-      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
-      setPushEnabled(true);
-      setPushState(await setupPush(rpcCall));
-    } catch (err) {
-      setError(err?.message ?? '推送开启失败 | failed to enable push');
-    }
-  };
-
-  // 关闭推送：取消浏览器订阅 + 宿主开关关
-  const disablePush = async () => {
-    try {
-      try {
-        if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.getRegistration('/pocket-sw.js');
-          const sub = await reg?.pushManager?.getSubscription();
-          if (sub) {
-            const endpoint = sub.endpoint;
-            await sub.unsubscribe();
-            await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
-          }
-        }
-      } catch { /* 浏览器侧失败不影响宿主开关 */ }
-      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
-      setPushEnabled(false);
-      setPushState('off');
-    } catch (err) {
-      setError(err?.message ?? '推送关闭失败 | failed to disable push');
     }
   };
 
@@ -266,23 +192,6 @@ function PocketSettingsTab({ rpcCall }) {
               `⏳ ${tunnelStateDetail}（已等待 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1000)} 秒）…`)
             : h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人'),
         ),
-    ),
-
-    // Web Push 状态 + 开关
-    h('div', { style: styles.block },
-      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-        h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔔 推送通知 | Push notifications'),
-        pushEnabled
-          ? h('button', { style: styles.btn, onClick: disablePush }, '关闭 | Off')
-          : h('button', { style: styles.primary, onClick: enablePush }, '开启 | On'),
-      ),
-      h('div', { style: styles.muted },
-        !pushEnabled ? '已关闭：agent 跑完不会推送 | off: no notifications'
-        : pushState === 'on' ? '已开启：agent 跑完/出错时手机收到通知 | on: notified when tasks finish or fail'
-        : pushState === 'unsupported' ? '已开启（但当前浏览器不支持推送）| on, but this browser does not support push'
-        : pushState === 'insecure' ? '已开启，但当前路径不是 HTTPS——推送需要公网隧道或 localhost | on, but push needs HTTPS (public tunnel) or localhost'
-        : pushState === 'checking' ? '检查中… | checking…'
-        : '推送未生效 | push not active'),
     ),
 
     error ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', fontSize: 12, marginTop: 8 } }, `❌ ${error}`) : null,

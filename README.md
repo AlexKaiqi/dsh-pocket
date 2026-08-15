@@ -42,7 +42,6 @@ DSH Pocket 就是干这个的：**装上它，手机扫个码，就能实时看�
 | 📱 移动端适配 | 窄屏自动变抽屉布局（移植 dsh-web-mobile，MIT）：侧栏抽屉、会话全宽、状态栏安全区、触控优化 |
 | 🧩 零依赖安装 | 一个 npm 包、一个设置页，没有核心/适配器要分开装；无需账号、无需服务器 |
 | 🔒 URL 即钥匙 | 无公网 URL 暴露给第三方（局域网模式）；公网 URL 每次重启自动换新 |
-| 🔔 Web Push 通知 | agent 跑完/出错 → 手机推送通知（即使没开页面）；需 HTTPS 公网路径或 localhost |
 
 ## 🚀 怎么用
 
@@ -93,7 +92,6 @@ npx @deepseek-ai/dsh web
 | 装完/更新了但界面没变化 | **必须重启 `dsh web`** 才生效；运行中的进程仍加载旧代码 |
 | `listen EADDRINUSE ... :3081` | 旧 dsh-pocket 进程还占着端口：`lsof -ti :3081 \| xargs kill -9` 后重试 |
 | 版本停在 0.x 升不上去 | `^0.x` 范围不允许升到 1.x：更新用 `--latest`（`dsh plugin --profile web update dsh-pocket --latest -w`） |
-| 手机 iOS 收不到推送 | Safari 的 Web Push 要求**先把网页「添加到主屏幕」**，从主屏幕图标打开后才生效（Chrome/Android 无此要求） |
 | 公网 `error 1033` | 见下方「公网隧道常见问题」——多半是本机代理/VPN（Clash 等 TUN 模式）掐断了隧道 |
 | 点「重启 dsh web」后页面提示进程在后台运行 | 自重启的新进程是 detached 后台进程（不挂终端），是页内更新的标准做法；停止它：`lsof -ti :3080 \| xargs kill -9`（日志在 `$DSH_HOME` 下 `dsh-pocket-restart-*.log`） |
 

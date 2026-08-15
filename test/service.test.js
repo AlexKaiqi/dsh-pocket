@@ -248,35 +248,6 @@ test('RPC：version 返回磁盘版本 current 与启动版本 loaded', async ()
   await service.dispose();
 });
 
-test('RPC：push 传 promise（插件启动早期）也能正常调用', async () => {
-  const internals = stubInternals();
-  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
-  const conn = fakeCtxConnection();
-  installPocketRpc({ connection: conn }, {
-    service,
-    push: Promise.resolve({
-      vapidPublicKey: () => 'pub',
-      count: () => 2,
-      subscribe: async () => true,
-      unsubscribe: async () => true,
-      isEnabled: () => true,
-      setEnabled: async () => true,
-    }),
-    log: { error() {}, warn() {} },
-  });
-
-  const st = await conn.handler(POCKET_ENDPOINTS.pushStatus, {});
-  assert.equal(st.ok, true);
-  assert.equal(st.value.enabled, true, 'promise resolve 后可用');
-  assert.equal(st.value.count, 2);
-
-  const key = await conn.handler(POCKET_ENDPOINTS.pushVapidKey, {});
-  assert.equal(key.ok, true);
-  assert.equal(key.value.publicKey, 'pub');
-
-  await service.dispose();
-});
-
 test('lib/index.js 模块可加载，apply 可调用（防模块级 ReferenceError 回归）', async () => {
   // 回归：pocketRestart 曾引用 apply 参数里的 internals，点「重启」抛 ReferenceError
   const mod = await import('../lib/index.js');
@@ -298,14 +269,22 @@ test('lib/index.js 模块可加载，apply 可调用（防模块级 ReferenceErr
   // apply 内部用 ctx.effect 注册清理，返回值不是契约；这里只验证不抛错
   mod.apply(ctx, {}, {
     service: stubService,
-    pushPromise: Promise.resolve({
-      vapidPublicKey: () => 'pub', count: () => 0, subscribe: async () => true,
-      unsubscribe: async () => true, isEnabled: () => true, setEnabled: async () => true,
-      notify: async () => 0,
-    }),
-    runUpdate: { currentVersion: () => '1.0.19', loadedVersion: () => '1.0.19', perform: async () => ({ ok: true }) },
+    runUpdate: { currentVersion: () => '1.0.20', loadedVersion: () => '1.0.20', perform: async () => ({ ok: true }) },
     restart: () => ({ helperPid: 1, logOut: '', logErr: '' }),
     restartNotice: async () => null,
   });
   assert.ok(true, 'apply 正常路径不抛错');
+});
+
+test('compareVersions：语义化版本比较', async () => {
+  const { compareVersions } = await import('../client/api.js');
+  assert.ok(compareVersions('1.0.5', '1.0.4') > 0);
+  assert.ok(compareVersions('1.0.4', '1.0.5') < 0);
+  assert.equal(compareVersions('1.0.4', '1.0.4'), 0);
+  assert.ok(compareVersions('1.10.0', '1.9.9') > 0, '两位数字正确比较');
+  assert.ok(compareVersions('1.0.4', '1.0.4-rc.1') > 0, '预发布视为更旧');
+  assert.ok(compareVersions('1.0.4-rc.1', '1.0.4') < 0, '反过来更旧');
+  assert.ok(compareVersions('1.0.4-alpha', '1.0.4-beta') < 0, '预发布后缀按字典序');
+  assert.ok(compareVersions('1.0.4-beta.2', '1.0.4-beta.1') > 0, '预发布后缀比较');
+  assert.equal(compareVersions('V1.0.4', '1.0.4'), 0, '大写 V 也剥掉');
 });
