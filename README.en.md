@@ -26,8 +26,6 @@
 
 That's what DSH Pocket does: **install it, scan a QR code, and your phone shows and controls the DeepSeek Harness UI in real time — from anywhere.**
 
-> One-liner: `dsh web` only allows local access by default; DSH Pocket puts a proxy in front of it that safely bridges your phone.
-
 What it looks like — the phone shows the exact same UI as your computer, live:
 
 <p align="center">
