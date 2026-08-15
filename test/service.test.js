@@ -173,3 +173,51 @@ test('自重启失败：spawn 抛错 → 返回 helperPid:null 和错误', async
   assert.equal(result.helperPid, null);
   assert.match(result.error, /boom/);
 });
+
+test('readRestartNotice：真实文件系统（无文件/坏 JSON/过期/有效）', async () => {
+  const os = await import('node:os');
+  const fsp = await import('node:fs/promises');
+  const path = await import('node:path');
+  const { readRestartNotice } = await import('../lib/index.js');
+
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dsh-pocket-test-'));
+  const prev = process.env.DSH_HOME;
+  process.env.DSH_HOME = dir;
+  try {
+    // 1. 无文件（ENOENT）→ null，且不得产生未处理的 promise rejection（曾导致启动崩溃）
+    assert.equal(await readRestartNotice(), null, '无标记文件返回 null');
+
+    // 2. 坏 JSON → null
+    await fsp.mkdir(path.join(dir, 'dsh-pocket'), { recursive: true });
+    await fsp.writeFile(path.join(dir, 'dsh-pocket', 'restarted.json'), 'not-json');
+    assert.equal(await readRestartNotice(), null, '坏 JSON 返回 null');
+
+    // 3. 过期标记（31 分钟前）→ null
+    await fsp.writeFile(path.join(dir, 'dsh-pocket', 'restarted.json'), JSON.stringify({ at: Date.now() - 31 * 60 * 1000, pid: 1 }));
+    assert.equal(await readRestartNotice(), null, '过期标记返回 null');
+
+    // 4. 有效标记 → 返回内容
+    await fsp.writeFile(path.join(dir, 'dsh-pocket', 'restarted.json'), JSON.stringify({ at: Date.now(), pid: 4242 }));
+    const n = await readRestartNotice();
+    assert.equal(n.pid, 4242, '有效标记返回 pid');
+  } finally {
+    process.env.DSH_HOME = prev;
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('RPC：restartNotice 读取抛错时 status 优雅降级为 null', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  installPocketRpc({ connection: conn }, {
+    service,
+    restartNotice: async () => { throw new Error('ENOENT'); },
+    log: { error() {}, warn() {} },
+  });
+  await service.startProxy();
+  const s = await conn.handler(POCKET_ENDPOINTS.status, {});
+  assert.equal(s.ok, true);
+  assert.equal(s.value.restartNotice, null, '读取失败不阻塞 status');
+  await service.dispose();
+});
