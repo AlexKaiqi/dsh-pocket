@@ -3,9 +3,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { connect } from 'node:net';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import { createPocketProxy } from '../lib/proxy.mjs';
+
+/** 构造一个带掩码的 WS 文本帧（浏览器在握手后立即发的首帧，会进 upgrade 的 head）。 */
+function maskedTextFrame(text) {
+  const payload = Buffer.from(text);
+  const mask = Buffer.from([1, 2, 3, 4]);
+  const header = Buffer.alloc(2);
+  header[0] = 0x81; // FIN + text
+  header[1] = 0x80 | payload.length; // MASK + len
+  const masked = Buffer.alloc(payload.length);
+  for (let i = 0; i < payload.length; i++) masked[i] = payload[i] ^ mask[i % 4];
+  return Buffer.concat([header, mask, masked]);
+}
 
 /** 假上游：记录收到的 Host/Origin，回显请求路径。 */
 async function fakeUpstream() {
@@ -71,5 +84,42 @@ test('上游未启动：返回 502 且给出提示', async () => {
     assert.match(await res.text(), /无法连接上游 dsh web/);
   } finally {
     await proxy.close();
+  }
+});
+
+test('WS 首帧（握手后立即发出，进 upgrade head）必须送达上游——回归：connection lost 根因', async () => {
+  const up = await fakeUpstream();
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.port } });
+  try {
+    const received = await new Promise((resolve, reject) => {
+      const sock = connect(proxy.port, '127.0.0.1', () => {
+        sock.write(
+          `GET /api/events.host HTTP/1.1\r\n` +
+          `Host: whatever:3081\r\n` +
+          `Upgrade: websocket\r\n` +
+          `Connection: Upgrade\r\n` +
+          `Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n` + // 规范 16 字节 key
+          `Sec-WebSocket-Version: 13\r\n\r\n`,
+        );
+        // 不等 101，立即发出首帧（浏览器就是这么干的）
+        sock.write(maskedTextFrame('hello-head'));
+      });
+      let buf = '';
+      const timer = setTimeout(() => reject(new Error('timeout waiting for echo')), 4000);
+      sock.on('data', (chunk) => {
+        buf += chunk.toString('latin1');
+        // 上游把帧回显成 echo:hello-head（文本帧 payload 直接可读）
+        if (buf.includes('hello-head')) {
+          clearTimeout(timer);
+          sock.destroy();
+          resolve(true);
+        }
+      });
+      sock.on('error', reject);
+    });
+    assert.equal(received, true, '上游必须收到握手后立即发出的首帧');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.server.close(r));
   }
 });
