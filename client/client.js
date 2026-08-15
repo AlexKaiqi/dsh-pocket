@@ -1453,10 +1453,10 @@ function PocketSettingsTab({ rpcCall }) {
         "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"
       )
     ),
-    // 重启后提示（进程在后台运行，停止方法）
+    // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条
     restartNotice ? (0, import_react2.createElement)(
       "div",
-      { style: { ...styles.block, border: "1px solid var(--dsw-alias-brand-primary,#4f6ef7)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
+      { style: { ...styles.block, borderLeft: "4px solid var(--dsw-alias-brand-primary,#4f6ef7)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
       (0, import_react2.createElement)(
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
@@ -1465,10 +1465,10 @@ function PocketSettingsTab({ rpcCall }) {
       ),
       (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, "\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1Alsof -ti :3080 | xargs kill -9")
     ) : null,
-    // 更新提示
+    // 更新提示——左侧黄色色条（提示有新版本）
     updateInfo ? (0, import_react2.createElement)(
       "div",
-      { style: { ...styles.block, border: "1px solid var(--dsw-alias-state-warn-primary,#b45309)" }, borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" },
+      { style: { ...styles.block, borderLeft: "4px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
       (0, import_react2.createElement)(
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
