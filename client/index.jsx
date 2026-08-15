@@ -233,7 +233,7 @@ function PocketSettingsTab({ rpcCall }) {
       ),
       h('div', { style: styles.muted, marginTop: 4 },
         updateInfo.result === 'ok' ? '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web'
-        : updateInfo.result === 'fail' ? `❌ 更新失败：${updateInfo.output || '未知'}（也可手动执行 dsh plugin --profile web update dsh-pocket --latest -w）`
+        : updateInfo.result === 'fail' ? `❌ 失败：${updateInfo.output || '未知'}（手动更新：dsh plugin --profile web update dsh-pocket --latest -w）`
         : `当前 v${updateInfo.current} → 最新 v${updateInfo.latest}`),
     ) : null,
 

@@ -276,3 +276,36 @@ test('RPC：push 传 promise（插件启动早期）也能正常调用', async (
 
   await service.dispose();
 });
+
+test('lib/index.js 模块可加载，apply 可调用（防模块级 ReferenceError 回归）', async () => {
+  // 回归：pocketRestart 曾引用 apply 参数里的 internals，点「重启」抛 ReferenceError
+  const mod = await import('../lib/index.js');
+  assert.equal(typeof mod.apply, 'function');
+  assert.equal(typeof mod.readRestartNotice, 'function');
+  assert.equal(typeof mod.name, 'string');
+
+  // apply 用最小 fake ctx 调用不应抛错（不启动真实代理：注入 stub service）
+  const ctx = {
+    logger: () => ({ error() {}, info() {}, warn() {} }),
+    webServer: { port: 3080 },
+    on: () => () => {},
+    effect: () => {},
+  };
+  const stubService = {
+    startProxy: async () => ({}), dispose: async () => {}, status: async () => ({}),
+    startTunnel: async () => 'https://x.trycloudflare.com', stopTunnel: () => {},
+  };
+  // apply 内部用 ctx.effect 注册清理，返回值不是契约；这里只验证不抛错
+  mod.apply(ctx, {}, {
+    service: stubService,
+    pushPromise: Promise.resolve({
+      vapidPublicKey: () => 'pub', count: () => 0, subscribe: async () => true,
+      unsubscribe: async () => true, isEnabled: () => true, setEnabled: async () => true,
+      notify: async () => 0,
+    }),
+    runUpdate: { currentVersion: () => '1.0.19', loadedVersion: () => '1.0.19', perform: async () => ({ ok: true }) },
+    restart: () => ({ helperPid: 1, logOut: '', logErr: '' }),
+    restartNotice: async () => null,
+  });
+  assert.ok(true, 'apply 正常路径不抛错');
+});
