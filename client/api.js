@@ -5,6 +5,10 @@ export const POCKET_ENDPOINTS = Object.freeze({
   status: 'pocket.status',
   tunnelStart: 'tunnel.start',
   tunnelStop: 'tunnel.stop',
+  pushVapidKey: 'push.vapidKey',
+  pushSubscribe: 'push.subscribe',
+  pushUnsubscribe: 'push.unsubscribe',
+  pushStatus: 'push.status',
 });
 
 /** 浏览器可见的状态字段（无敏感信息；含二维码 data URL）。 */

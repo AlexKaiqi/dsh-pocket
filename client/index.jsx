@@ -1,6 +1,7 @@
 // dsh-pocket 网页客户端：
-//   1. 设置页签「手机访问」（局域网/公网二维码）
+//   1. 设置页签「手机访问」（局域网/公网二维码 + Web Push 状态）
 //   2. 移动端适配（移植自 MIT 项目 dsh-web-mobile，见 client/mobile/LICENSE.dsh-web-mobile）
+//   3. Web Push：注册 Service Worker + 订阅推送（agent 跑完/出错 → 手机通知）
 //
 // 手机扫码打开的就是电脑上的 dsh web，实时同步；窄屏自动变成抽屉布局。
 
@@ -11,6 +12,36 @@ import { mobileApply } from './mobile/mobile-apply.tsx';
 
 const name = 'dsh-pocket';
 const inject = ['slots', 'connection', 'layout', 'locale', 'sessionLogDownload'];
+
+/** Web Push：注册 SW + 订阅（仅安全上下文可用：HTTPS 公网 / localhost）。 */
+async function setupPush(rpcCall) {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+    if (!window.isSecureContext) return 'insecure'; // http://LAN-IP 无 Push API
+    const reg = await navigator.serviceWorker.register('/pocket-sw.js');
+    const vapid = await rpcCall(POCKET_ENDPOINTS.pushVapidKey, {});
+    if (!vapid?.ok) return 'host-error';
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid.value.publicKey),
+      });
+    }
+    const res = await rpcCall(POCKET_ENDPOINTS.pushSubscribe, { subscription: sub.toJSON() });
+    return res?.ok ? 'on' : 'host-error';
+  } catch {
+    return 'error';
+  }
+}
+
+/** VAPID 公钥（base64url）→ Uint8Array（pushManager.subscribe 需要）。 */
+function urlBase64ToUint8Array(base64url) {
+  const pad = '='.repeat((4 - (base64url.length % 4)) % 4);
+  const b64 = (base64url + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
 
 const styles = {
   card: { background: 'var(--dsw-alias-bg-layer-1,#fff)', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', borderRadius: 12, padding: '14px 16px', maxWidth: 480 },
@@ -27,6 +58,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
 
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
@@ -42,6 +74,11 @@ function PocketSettingsTab({ rpcCall }) {
     load();
     const t = setInterval(load, 3000);
     return () => clearInterval(t);
+  }, []);
+
+  // Web Push 订阅（只跑一次）
+  useEffect(() => {
+    setupPush(rpcCall).then(setPushState);
   }, []);
 
   const startTunnel = async () => {
@@ -95,6 +132,17 @@ function PocketSettingsTab({ rpcCall }) {
           h('button', { style: styles.primary, onClick: startTunnel, disabled: busy }, busy ? '开启中…（首次需下载 cloudflared）' : '开启公网访问 | Enable anywhere'),
           h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人'),
         ),
+    ),
+
+    // Web Push 状态
+    h('div', { style: styles.block },
+      h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔔 推送通知 | Push notifications'),
+      h('div', { style: styles.muted },
+        pushState === 'on' ? '已开启：agent 跑完/出错时手机收到通知 | on: notified when tasks finish or fail'
+        : pushState === 'unsupported' ? '当前浏览器不支持推送 | this browser does not support push'
+        : pushState === 'insecure' ? '需要 HTTPS（公网隧道）或 localhost 才能开启推送 | push needs HTTPS (public tunnel) or localhost'
+        : pushState === 'checking' ? '检查中… | checking…'
+        : '推送未开启 | push not enabled'),
     ),
 
     error ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', fontSize: 12, marginTop: 8 } }, `❌ ${error}`) : null,

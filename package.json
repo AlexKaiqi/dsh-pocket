@@ -27,7 +27,8 @@
   },
   "dependencies": {
     "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode-terminal": "^0.12.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "esbuild": "^0.25.9",
@@ -76,5 +77,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

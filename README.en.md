@@ -35,6 +35,7 @@ Phone ──scan──> dsh-pocket proxy ──> dsh web :3080
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
 | 🧩 Zero-dependency install | One npm package, one settings tab — no core/adapter split, no account, no server |
 | 🔒 URL is the key | No public URL exposure in LAN mode; public URL rotates on every restart |
+| 🔔 Web Push | Phone notifications when a task finishes or fails (even with the page closed); requires the HTTPS public tunnel or localhost |
 
 ## 🚀 Usage
 
