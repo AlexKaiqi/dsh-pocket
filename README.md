@@ -35,6 +35,29 @@ dsh plugin --profile web add dsh-pocket -w
 
 DSH 的 `/api` 浏览器信任栅栏只认 loopback 或 `--trusted-host`（官方还禁了 `0.0.0.0` 绑定，防止把远程执行代码暴露给网络）。Pocket 把入站请求的 `Host` / `Origin` 统一改写成 `127.0.0.1:<dsh端口>`，栅栏永远看到 loopback——**不需要改 dsh 的任何配置**。代理随插件自动启动，公网隧道按需开启（首次自动下载 cloudflared）。
 
+## ⚠️ 公网隧道常见问题（必读）
+
+**现象**：点「开启公网访问」后，手机上打开公网地址报 `error 1033`（Tunnel error）。
+
+**最常见原因：本机开着代理/VPN（Clash、Surge、v2ray、sing-box 等，尤其 TUN 模式）**。
+这类工具会接管全部流量，并常常把 cloudflared 的隧道边缘连接
+（`*.argotunnel.com`、Cloudflare 边缘 IP）掐断，导致隧道注册成功但数据面连不上。
+
+**解决（三选一）**：
+
+1. 临时**彻底退出代理软件**（不只是关界面：Clash 要右键菜单栏图标 → 退出；若装有
+   后台服务还要在服务管理器里停掉，`ps aux | grep clash` 确认进程消失），再重试
+2. 给代理加**直连规则**，放行隧道域名与 Cloudflare 边缘（Clash 规则示例）：
+   ```yaml
+   - DOMAIN-SUFFIX,argotunnel.com,DIRECT
+   - DOMAIN-SUFFIX,trycloudflare.com,DIRECT
+   - IP-CIDR,198.41.192.0/24,DIRECT,no-resolve
+   ```
+3. 网络实在不通时，改用**局域网模式**：手机开热点 → 电脑连手机热点 → 扫局域网码，
+   效果完全一样（人在外面也能用）
+
+**其他可能**：企业防火墙/校园网拦截出站；此时请让 IT 放行或改用热点。
+
 ## 架构（单包）
 
 | 文件 | 说明 |
