@@ -10,7 +10,25 @@ export const POCKET_ENDPOINTS = Object.freeze({
   pushUnsubscribe: 'push.unsubscribe',
   pushStatus: 'push.status',
   pushSetEnabled: 'push.setEnabled',
+  version: 'pocket.version',
+  update: 'pocket.update',
 });
+
+/** 语义化版本比较：a > b 返回正数，相等 0，a < b 负数（仅数字段；带预发布后缀的更旧）。 */
+export function compareVersions(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.');
+  const pb = String(b).replace(/^v/, '').split('.');
+  for (let i = 0; i < 3; i++) {
+    const x = parseInt(pa[i], 10) || 0;
+    const y = parseInt(pb[i], 10) || 0;
+    if (x !== y) return x - y;
+  }
+  // 数字段相等：带预发布（-）的更旧
+  const aPre = /-/.test(pa[2] ?? '');
+  const bPre = /-/.test(pb[2] ?? '');
+  if (aPre !== bPre) return aPre ? -1 : 1;
+  return 0;
+}
 
 /** 浏览器可见的状态字段（无敏感信息；含二维码 data URL）。 */
 export function redactStatus(s) {

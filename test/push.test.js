@@ -117,3 +117,12 @@ test('开关：setEnabled 持久化；关闭时 notify 不发送', async () => {
   assert.equal(push2.isEnabled(), true);
   assert.equal(await push2.notify({ title: 't', body: 'b' }), 1, '重新开启后可发');
 });
+
+test('compareVersions：语义化版本比较', async () => {
+  const { compareVersions } = await import('../client/api.js');
+  assert.ok(compareVersions('1.0.5', '1.0.4') > 0);
+  assert.ok(compareVersions('1.0.4', '1.0.5') < 0);
+  assert.equal(compareVersions('1.0.4', '1.0.4'), 0);
+  assert.ok(compareVersions('1.10.0', '1.9.9') > 0, '两位数字正确比较');
+  assert.ok(compareVersions('1.0.4', '1.0.4-rc.1') > 0, '预发布视为更旧');
+});

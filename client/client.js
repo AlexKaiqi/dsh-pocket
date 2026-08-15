@@ -42,8 +42,23 @@ var POCKET_ENDPOINTS = Object.freeze({
   pushSubscribe: "push.subscribe",
   pushUnsubscribe: "push.unsubscribe",
   pushStatus: "push.status",
-  pushSetEnabled: "push.setEnabled"
+  pushSetEnabled: "push.setEnabled",
+  version: "pocket.version",
+  update: "pocket.update"
 });
+function compareVersions(a, b) {
+  const pa = String(a).replace(/^v/, "").split(".");
+  const pb = String(b).replace(/^v/, "").split(".");
+  for (let i = 0; i < 3; i++) {
+    const x = parseInt(pa[i], 10) || 0;
+    const y = parseInt(pb[i], 10) || 0;
+    if (x !== y) return x - y;
+  }
+  const aPre = /-/.test(pa[2] ?? "");
+  const bPre = /-/.test(pb[2] ?? "");
+  if (aPre !== bPre) return aPre ? -1 : 1;
+  return 0;
+}
 function redactStatus(s) {
   return {
     proxyRunning: s?.proxyRunning === true,
@@ -1288,6 +1303,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [error, setError] = (0, import_react2.useState)(null);
   const [pushEnabled, setPushEnabled] = (0, import_react2.useState)(true);
   const [pushState, setPushState] = (0, import_react2.useState)("checking");
+  const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
     if (!res?.ok) throw new Error(res?.error?.message ?? "RPC failed");
@@ -1308,6 +1324,33 @@ function PocketSettingsTab({ rpcCall }) {
     call(POCKET_ENDPOINTS.pushStatus, {}).then((s) => setPushEnabled(s.enabled)).catch(() => {
     });
   }, []);
+  (0, import_react2.useEffect)(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const v = await call(POCKET_ENDPOINTS.version, {});
+        const meta = await (await fetch("https://registry.npmjs.org/dsh-pocket/latest")).json();
+        if (!alive) return;
+        const latest = typeof meta?.version === "string" ? meta.version : null;
+        if (latest && v.current && compareVersions(latest, v.current) > 0) {
+          setUpdateInfo({ current: v.current, latest, updating: false, result: null });
+        }
+      } catch {
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const runUpdate = async () => {
+    setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
+    try {
+      const r = await call(POCKET_ENDPOINTS.update, {});
+      setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? "ok" : "fail", output: r.output ?? r.error }));
+    } catch (err) {
+      setUpdateInfo((u) => ({ ...u, updating: false, result: "fail", output: err.message }));
+    }
+  };
   const enablePush = async () => {
     await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
     setPushEnabled(true);
@@ -1358,6 +1401,22 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)("strong", null, "\u{1F4F1} \u624B\u673A\u8BBF\u95EE | Phone access"),
       (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
     ),
+    // 更新提示
+    updateInfo ? (0, import_react2.createElement)(
+      "div",
+      { style: { ...styles.block, border: "1px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
+      (0, import_react2.createElement)(
+        "div",
+        { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`),
+        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : null
+      ),
+      (0, import_react2.createElement)(
+        "div",
+        { style: styles.muted, marginTop: 4 },
+        updateInfo.result === "ok" ? "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u91CD\u542F dsh web \u751F\u6548 | updated \u2014 restart dsh web" : updateInfo.result === "fail" ? `\u274C \u66F4\u65B0\u5931\u8D25\uFF1A${updateInfo.output || "\u672A\u77E5"}\uFF08\u4E5F\u53EF\u624B\u52A8\u6267\u884C dsh plugin --profile web update dsh-pocket --latest -w\uFF09` : `\u5F53\u524D v${updateInfo.current} \u2192 \u6700\u65B0 v${updateInfo.latest}`
+      )
+    ) : null,
     // 局域网
     (0, import_react2.createElement)(
       "div",

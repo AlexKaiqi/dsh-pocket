@@ -7,7 +7,7 @@
 
 import { createElement as h, useEffect, useState } from 'react';
 
-import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus } from './api.js';
+import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus, compareVersions } from './api.js';
 import { mobileApply } from './mobile/mobile-apply.tsx';
 
 const name = 'dsh-pocket';
@@ -60,6 +60,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [error, setError] = useState(null);
   const [pushEnabled, setPushEnabled] = useState(true); // 宿主开关
   const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
+  const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result } | null
 
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
@@ -81,6 +82,34 @@ function PocketSettingsTab({ rpcCall }) {
   useEffect(() => {
     call(POCKET_ENDPOINTS.pushStatus, {}).then((s) => setPushEnabled(s.enabled)).catch(() => {});
   }, []);
+
+  // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const v = await call(POCKET_ENDPOINTS.version, {});
+        const meta = await (await fetch('https://registry.npmjs.org/dsh-pocket/latest')).json();
+        if (!alive) return;
+        const latest = typeof meta?.version === 'string' ? meta.version : null;
+        if (latest && v.current && compareVersions(latest, v.current) > 0) {
+          setUpdateInfo({ current: v.current, latest, updating: false, result: null });
+        }
+      } catch { /* 网络失败静默 */ }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // 一键更新：调宿主 dsh plugin update
+  const runUpdate = async () => {
+    setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
+    try {
+      const r = await call(POCKET_ENDPOINTS.update, {});
+      setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? 'ok' : 'fail', output: r.output ?? r.error }));
+    } catch (err) {
+      setUpdateInfo((u) => ({ ...u, updating: false, result: 'fail', output: err.message }));
+    }
+  };
 
   // 开启推送：宿主开关开 + 浏览器订阅（安全上下文才有效）
   const enablePush = async () => {
@@ -131,6 +160,20 @@ function PocketSettingsTab({ rpcCall }) {
       h('strong', null, '📱 手机访问 | Phone access'),
       h('div', { style: styles.muted }, '手机扫码打开的就是电脑上的这个界面，实时同步 | the phone shows this exact screen, live'),
     ),
+
+    // 更新提示
+    updateInfo ? h('div', { style: { ...styles.block, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
+      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+        h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📦 新版本 v${updateInfo.latest} | Update available`),
+        updateInfo.result !== 'ok'
+          ? h('button', { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? '更新中…' : `更新到 v${updateInfo.latest} | Update`)
+          : null,
+      ),
+      h('div', { style: styles.muted, marginTop: 4 },
+        updateInfo.result === 'ok' ? '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web'
+        : updateInfo.result === 'fail' ? `❌ 更新失败：${updateInfo.output || '未知'}（也可手动执行 dsh plugin --profile web update dsh-pocket --latest -w）`
+        : `当前 v${updateInfo.current} → 最新 v${updateInfo.latest}`),
+    ) : null,
 
     // 局域网
     h('div', { style: styles.block },
