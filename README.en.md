@@ -4,6 +4,8 @@
 
 <h1 align="center">DSH Pocket</h1>
 
+> [English](README.en.md) | [中文](README.md)
+
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="npm" src="https://img.shields.io/npm/v/dsh-pocket?color=4d6bfe&label=npm"></a>
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="downloads" src="https://img.shields.io/npm/dm/dsh-pocket?color=4d6bfe"></a>
@@ -13,8 +15,6 @@
 </p>
 
 > Put **DeepSeek Harness in your pocket**: one package, one settings tab — scan a QR code and your phone shows exactly what's on your computer screen, live, from anywhere.
->
-> [English](README.en.md) | [中文](README.md)
 
 ## What is this
 

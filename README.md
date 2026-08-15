@@ -4,6 +4,8 @@
 
 <h1 align="center">DSH Pocket</h1>
 
+> [English](README.en.md) | [中文](README.md)
+
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="npm" src="https://img.shields.io/npm/v/dsh-pocket?color=4d6bfe&label=npm"></a>
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="downloads" src="https://img.shields.io/npm/dm/dsh-pocket?color=4d6bfe"></a>
@@ -13,8 +15,6 @@
 </p>
 
 > 把 **DeepSeek Harness 装进你的口袋**：一个包、一个设置页，手机扫二维码就实时看到电脑上的同一个界面——人在外面也能用。
->
-> [English](README.en.md) | [中文](README.md)
 
 ## 这是什么
 
