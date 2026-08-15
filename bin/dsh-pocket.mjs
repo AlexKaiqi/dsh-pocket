@@ -73,15 +73,25 @@ async function main() {
     console.log('⚠️  未检测到局域网 IP，跳过局域网二维码');
   }
 
+  // Ctrl+C / kill：停隧道 → 关代理 → 真正退出（修复：之前只停隧道不退出进程）
+  const controller = new AbortController();
+  let tunnel = null;
+  const shutdown = async () => {
+    console.log('\n👋 dsh-pocket 已退出 | bye');
+    controller.abort();
+    tunnel?.kill();
+    await close().catch(() => {});
+    process.exit(130);
+  };
+  process.on('SIGINT', () => void shutdown());
+  process.on('SIGTERM', () => void shutdown());
+
   if (args.public) {
     console.log('🌐 正在建立公网隧道（cloudflared）…');
-    const controller = new AbortController();
-    process.on('SIGINT', () => controller.abort());
     try {
-      const tunnel = await startQuickTunnel({ port, signal: controller.signal });
+      tunnel = await startQuickTunnel({ port, signal: controller.signal });
       printQr(tunnel.url, '🌐 公网访问（人在外面也能用）：');
       console.log('   隧道会持续运行；Ctrl+C 退出（下次启动会换新 URL）');
-      process.on('SIGINT', () => { tunnel.kill(); });
     } catch (err) {
       console.error(`❌ 公网隧道失败：${err.message}（局域网二维码仍可用）`);
     }
