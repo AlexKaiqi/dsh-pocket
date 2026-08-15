@@ -2,7 +2,7 @@
   <img src="docs/banner.jpg" alt="DSH Pocket" width="100%">
 </p>
 
-# DSH Pocket
+<h1 align="center">DSH Pocket</h1>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="npm" src="https://img.shields.io/npm/v/dsh-pocket?color=4d6bfe&label=npm"></a>
@@ -39,6 +39,13 @@ Phone ──scan──> dsh-pocket proxy ──> dsh web :3080
 
 ## 🚀 Usage
 
+**Prerequisite**: [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) installed. If your terminal says `dsh: command not found`, install it first:
+
+```sh
+npm install -g @deepseek-ai/dsh     # global install; verify: dsh --version
+# No global install? Prefix every command with: npx @deepseek-ai/dsh
+```
+
 ```sh
 # 1. Install the plugin (everything in one package)
 dsh plugin --profile web add dsh-pocket -w
@@ -67,6 +74,18 @@ DSH's `/api` browser-trust fence only accepts loopback or `--trusted-host` autho
 - The public URL is randomly assigned by cloudflared and **changes on every restart** (old links die automatically — a natural key rotation).
 - LAN mode exposes nothing publicly; only devices on the same network can reach it.
 - Built for personal use; access tokens for multi-device/sharing are planned.
+
+## 🩹 Troubleshooting (traps users step on)
+
+| Symptom | Cause & fix |
+|---|---|
+| `dsh: command not found` / "DSH is not defined" | dsh CLI missing: `npm install -g @deepseek-ai/dsh`, or prefix commands with `npx @deepseek-ai/dsh` |
+| `ERR_PNPM_ADDING_TO_ROOT` | pnpm 9 workspace-root restriction: append `-w` (`--workspace-root`) to install/update commands |
+| Nothing changed after install/update | **You must restart `dsh web`**; the running process still loads the old code |
+| `listen EADDRINUSE ... :3081` | A stale dsh-pocket process holds the port: `lsof -ti :3081 \| xargs kill -9`, then retry |
+| Version stuck below 1.x | `^0.x` ranges never jump to 1.x: update with `--latest` (`dsh plugin --profile web update dsh-pocket --latest -w`) |
+| No push on iOS Safari | Safari Web Push requires **"Add to Home Screen"** first, then open from the home-screen icon (Chrome/Android don't need this) |
+| Public `error 1033` | See "Public tunnel troubleshooting" below — usually a local proxy/VPN (Clash etc. TUN mode) killing the tunnel |
 
 ## ⚠️ Public tunnel troubleshooting (read first)
 

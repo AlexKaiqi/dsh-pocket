@@ -2,7 +2,7 @@
   <img src="docs/banner.jpg" alt="DSH Pocket" width="100%">
 </p>
 
-# DSH Pocket
+<h1 align="center">DSH Pocket</h1>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="npm" src="https://img.shields.io/npm/v/dsh-pocket?color=4d6bfe&label=npm"></a>
@@ -39,6 +39,13 @@
 
 ## 🚀 怎么用
 
+**前提**：电脑上已装好 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。如果终端提示 `dsh: command not found`（找不到 dsh 命令），先安装：
+
+```sh
+npm install -g @deepseek-ai/dsh     # 全局安装；验证：dsh --version
+# 不想全局装？每次命令前加 npx：npx @deepseek-ai/dsh <命令>
+```
+
 ```sh
 # 1. 装插件（一个包全都有）
 dsh plugin --profile web add dsh-pocket -w
@@ -67,6 +74,18 @@ DSH 的 `/api` 浏览器信任栅栏只认 loopback 或 `--trusted-host`（官�
 - 公网 URL 由 cloudflared 随机分配，**每次重启会变化**（旧链接自动失效，相当于天然轮换）
 - 局域网模式不暴露公网，只有同一网络内的设备能访问
 - 适合个人自用；多设备/分享场景后续会加访问令牌
+
+## 🩹 常见问题（别踩的坑）
+
+| 现象 | 原因与解决 |
+|---|---|
+| `dsh: command not found` / 提示 DSH 未定义 | dsh CLI 没装：`npm install -g @deepseek-ai/dsh`，或命令前加 `npx @deepseek-ai/dsh` |
+| `ERR_PNPM_ADDING_TO_ROOT` | pnpm 9 对 workspace 根的限制：安装/更新命令**末尾加 `-w`**（`--workspace-root`） |
+| 装完/更新了但界面没变化 | **必须重启 `dsh web`** 才生效；运行中的进程仍加载旧代码 |
+| `listen EADDRINUSE ... :3081` | 旧 dsh-pocket 进程还占着端口：`lsof -ti :3081 \| xargs kill -9` 后重试 |
+| 版本停在 0.x 升不上去 | `^0.x` 范围不允许升到 1.x：更新用 `--latest`（`dsh plugin --profile web update dsh-pocket --latest -w`） |
+| 手机 iOS 收不到推送 | Safari 的 Web Push 要求**先把网页「添加到主屏幕」**，从主屏幕图标打开后才生效（Chrome/Android 无此要求） |
+| 公网 `error 1033` | 见下方「公网隧道常见问题」——多半是本机代理/VPN（Clash 等 TUN 模式）掐断了隧道 |
 
 ## ⚠️ 公网隧道常见问题（必读）
 
