@@ -126,3 +126,11 @@ test('compareVersions：语义化版本比较', async () => {
   assert.ok(compareVersions('1.10.0', '1.9.9') > 0, '两位数字正确比较');
   assert.ok(compareVersions('1.0.4', '1.0.4-rc.1') > 0, '预发布视为更旧');
 });
+
+test('默认路径（不注入 stub）：createPushService 能加载真实 web-push（require 修复回归）', async () => {
+  // 不传 webpush → 走 defaultWebPush()；若 require 在 ESM 里未定义会抛 ReferenceError
+  const home = await mkdtemp(join(tmpdir(), 'push-real-'));
+  const push = await createPushService({ home, internals: { mkdir, write: writeFile, read: readFile } });
+  assert.equal(typeof push.vapidPublicKey(), 'string');
+  assert.ok(push.vapidPublicKey().length > 20, '真实 VAPID 公钥');
+});
