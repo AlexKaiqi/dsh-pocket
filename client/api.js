@@ -9,6 +9,7 @@ export const POCKET_ENDPOINTS = Object.freeze({
   pushSubscribe: 'push.subscribe',
   pushUnsubscribe: 'push.unsubscribe',
   pushStatus: 'push.status',
+  pushSetEnabled: 'push.setEnabled',
 });
 
 /** 浏览器可见的状态字段（无敏感信息；含二维码 data URL）。 */

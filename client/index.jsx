@@ -58,6 +58,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [pushEnabled, setPushEnabled] = useState(true); // 宿主开关
   const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
 
   const call = async (endpoint, payload) => {
@@ -76,10 +77,35 @@ function PocketSettingsTab({ rpcCall }) {
     return () => clearInterval(t);
   }, []);
 
-  // Web Push 订阅（只跑一次）
+  // 读取宿主开关状态
   useEffect(() => {
-    setupPush(rpcCall).then(setPushState);
+    call(POCKET_ENDPOINTS.pushStatus, {}).then((s) => setPushEnabled(s.enabled)).catch(() => {});
   }, []);
+
+  // 开启推送：宿主开关开 + 浏览器订阅（安全上下文才有效）
+  const enablePush = async () => {
+    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
+    setPushEnabled(true);
+    setPushState(await setupPush(rpcCall));
+  };
+
+  // 关闭推送：取消浏览器订阅 + 宿主开关关
+  const disablePush = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration('/pocket-sw.js');
+        const sub = await reg?.pushManager?.getSubscription();
+        if (sub) {
+          const endpoint = sub.endpoint;
+          await sub.unsubscribe();
+          await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
+        }
+      }
+    } catch { /* 忽略 */ }
+    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
+    setPushEnabled(false);
+    setPushState('off');
+  };
 
   const startTunnel = async () => {
     setBusy(true);
@@ -134,15 +160,21 @@ function PocketSettingsTab({ rpcCall }) {
         ),
     ),
 
-    // Web Push 状态
+    // Web Push 状态 + 开关
     h('div', { style: styles.block },
-      h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔔 推送通知 | Push notifications'),
+      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+        h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔔 推送通知 | Push notifications'),
+        pushEnabled
+          ? h('button', { style: styles.btn, onClick: disablePush }, '关闭 | Off')
+          : h('button', { style: styles.primary, onClick: enablePush }, '开启 | On'),
+      ),
       h('div', { style: styles.muted },
-        pushState === 'on' ? '已开启：agent 跑完/出错时手机收到通知 | on: notified when tasks finish or fail'
-        : pushState === 'unsupported' ? '当前浏览器不支持推送 | this browser does not support push'
-        : pushState === 'insecure' ? '需要 HTTPS（公网隧道）或 localhost 才能开启推送 | push needs HTTPS (public tunnel) or localhost'
+        !pushEnabled ? '已关闭：agent 跑完不会推送 | off: no notifications'
+        : pushState === 'on' ? '已开启：agent 跑完/出错时手机收到通知 | on: notified when tasks finish or fail'
+        : pushState === 'unsupported' ? '已开启（但当前浏览器不支持推送）| on, but this browser does not support push'
+        : pushState === 'insecure' ? '已开启，但当前路径不是 HTTPS——推送需要公网隧道或 localhost | on, but push needs HTTPS (public tunnel) or localhost'
         : pushState === 'checking' ? '检查中… | checking…'
-        : '推送未开启 | push not enabled'),
+        : '推送未生效 | push not active'),
     ),
 
     error ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', fontSize: 12, marginTop: 8 } }, `❌ ${error}`) : null,

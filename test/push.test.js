@@ -97,3 +97,23 @@ test('Service Worker 源码：含 push 与 notificationclick 处理', async () =
   assert.ok(src.includes("addEventListener('notificationclick'"), '点击处理');
   assert.ok(src.includes('clients.openWindow'), '点击打开窗口');
 });
+
+test('开关：setEnabled 持久化；关闭时 notify 不发送', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'push-'));
+  const wp = stubWebPush();
+  const push = await createPushService({ home, webpush: wp, internals: { mkdir, write: writeFile, read: readFile } });
+  assert.equal(push.isEnabled(), true, '默认开');
+  await push.subscribe(SUB_A);
+
+  await push.setEnabled(false);
+  assert.equal(push.isEnabled(), false);
+  assert.equal(await push.notify({ title: 't', body: 'b' }), 0, '关闭时不发');
+  assert.equal(wp.sent.length, 0);
+
+  // 持久化：新实例读取关闭状态
+  const push2 = await createPushService({ home, webpush: wp, internals: { mkdir, write: writeFile, read: readFile } });
+  assert.equal(push2.isEnabled(), false, '重启后仍为关');
+  await push2.setEnabled(true);
+  assert.equal(push2.isEnabled(), true);
+  assert.equal(await push2.notify({ title: 't', body: 'b' }), 1, '重新开启后可发');
+});
