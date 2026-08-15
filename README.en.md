@@ -105,17 +105,21 @@ On the same page click "**Enable anywhere**" → wait for the tunnel (first run 
 Such tools take over all traffic and often cut cloudflared's tunnel-edge connections
 (`*.argotunnel.com`, Cloudflare edge IPs), so the tunnel registers but the data plane never connects.
 
-**Fix (any one of)**:
+**Fix (try in order, lightest first)**:
 
-1. Temporarily **fully quit the proxy** (not just close the window: quit Clash from the menu-bar icon; if a
+1. First **just turn off the proxy's TUN mode** — no need to quit the proxy; this is enough in most cases:
+   - Clash: turn off the "**TUN mode**" toggle in Settings (or right-click the menu-bar icon → uncheck TUN mode)
+   - Surge: turn off "**Enhanced mode**"; v2ray/sing-box: turn off "**virtual NIC / route takeover**"
+   - Then go back to the settings page and click "Enable anywhere" again
+2. If that's not enough, temporarily **fully quit the proxy** (not just close the window: quit Clash from the menu-bar icon; if a
    background service is installed, stop it in the service manager and confirm with `ps aux | grep clash`), then retry.
-2. Add **DIRECT rules** to the proxy for the tunnel domains and Cloudflare edge (Clash example):
+3. Add **DIRECT rules** to the proxy for the tunnel domains and Cloudflare edge (Clash example):
    ```yaml
    - DOMAIN-SUFFIX,argotunnel.com,DIRECT
    - DOMAIN-SUFFIX,trycloudflare.com,DIRECT
    - IP-CIDR,198.41.192.0/24,DIRECT,no-resolve
    ```
-3. If the network really can't reach the tunnel, use **LAN mode**: turn on the phone hotspot → connect the computer to it → scan the LAN QR. Same experience, from anywhere.
+4. If the network really can't reach the tunnel, use **LAN mode**: turn on the phone hotspot → connect the computer to it → scan the LAN QR. Same experience, from anywhere.
 
 **Other causes**: corporate firewalls / campus networks blocking outbound — ask IT to allow it, or use a hotspot.
 
