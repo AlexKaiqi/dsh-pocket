@@ -4,7 +4,7 @@
 
 <h1 align="center">DSH Pocket</h1>
 
-> [English](README.en.md) | [中文](README.md)
+<p align="center">[English](README.en.md) | [中文](README.md)</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-pocket"><img alt="npm" src="https://img.shields.io/npm/v/dsh-pocket?color=4d6bfe&label=npm"></a>
