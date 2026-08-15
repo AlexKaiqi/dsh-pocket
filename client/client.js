@@ -68,6 +68,7 @@ function redactStatus(s) {
     tunnelRunning: s?.tunnelRunning === true,
     tunnelUrl: s?.tunnelUrl ?? null,
     tunnelQr: s?.tunnelQr ?? null,
+    tunnelState: s?.tunnelState ?? { phase: "idle" },
     dshPort: s?.dshPort ?? null
   };
 }
@@ -1303,6 +1304,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [error, setError] = (0, import_react2.useState)(null);
   const [pushEnabled, setPushEnabled] = (0, import_react2.useState)(true);
   const [pushState, setPushState] = (0, import_react2.useState)("checking");
+  const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
   const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
@@ -1311,7 +1313,9 @@ function PocketSettingsTab({ rpcCall }) {
   };
   const load = async () => {
     try {
-      setStatus(await call(POCKET_ENDPOINTS.status, {}));
+      const s = await call(POCKET_ENDPOINTS.status, {});
+      setStatus(s);
+      setTunnelState(s.tunnelState ?? null);
     } catch {
     }
   };
@@ -1376,6 +1380,7 @@ function PocketSettingsTab({ rpcCall }) {
   const startTunnel = async () => {
     setBusy(true);
     setError(null);
+    setTunnelState({ phase: "starting", detail: "\u6B63\u5728\u5F00\u542F\u2026", startedAt: Date.now() });
     try {
       setStatus(await call(POCKET_ENDPOINTS.tunnelStart, {}));
     } catch (err) {
@@ -1392,6 +1397,10 @@ function PocketSettingsTab({ rpcCall }) {
   };
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
+  const tunnelPhase = tunnelState?.phase ?? "idle";
+  const tunnelStarting = ["downloading", "starting", "registering"].includes(tunnelPhase);
+  const tunnelStateDetail = tunnelState?.detail ?? "";
+  const tunnelStateStarted = tunnelState?.startedAt ?? null;
   return (0, import_react2.createElement)(
     "div",
     { style: styles.card },
@@ -1445,8 +1454,12 @@ function PocketSettingsTab({ rpcCall }) {
       ) : (0, import_react2.createElement)(
         "div",
         null,
-        (0, import_react2.createElement)("button", { style: styles.primary, onClick: startTunnel, disabled: busy }, busy ? "\u5F00\u542F\u4E2D\u2026\uFF08\u9996\u6B21\u9700\u4E0B\u8F7D cloudflared\uFF09" : "\u5F00\u542F\u516C\u7F51\u8BBF\u95EE | Enable anywhere"),
-        (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA")
+        (0, import_react2.createElement)("button", { style: styles.primary, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? "\u5F00\u542F\u4E2D\u2026" : "\u5F00\u542F\u516C\u7F51\u8BBF\u95EE | Enable anywhere"),
+        tunnelStarting ? (0, import_react2.createElement)(
+          "div",
+          { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } },
+          `\u23F3 ${tunnelStateDetail}\uFF08\u5DF2\u7B49\u5F85 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1e3)} \u79D2\uFF09\u2026`
+        ) : (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA")
       )
     ),
     // Web Push 状态 + 开关

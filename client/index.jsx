@@ -60,6 +60,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [error, setError] = useState(null);
   const [pushEnabled, setPushEnabled] = useState(true); // 宿主开关
   const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
+  const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
   const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result } | null
 
   const call = async (endpoint, payload) => {
@@ -69,7 +70,11 @@ function PocketSettingsTab({ rpcCall }) {
   };
 
   const load = async () => {
-    try { setStatus(await call(POCKET_ENDPOINTS.status, {})); } catch { /* 忽略瞬时失败 */ }
+    try {
+      const s = await call(POCKET_ENDPOINTS.status, {});
+      setStatus(s);
+      setTunnelState(s.tunnelState ?? null);
+    } catch { /* 忽略瞬时失败 */ }
   };
 
   useEffect(() => {
@@ -139,6 +144,7 @@ function PocketSettingsTab({ rpcCall }) {
   const startTunnel = async () => {
     setBusy(true);
     setError(null);
+    setTunnelState({ phase: 'starting', detail: '正在开启…', startedAt: Date.now() });
     try {
       setStatus(await call(POCKET_ENDPOINTS.tunnelStart, {}));
     } catch (err) {
@@ -154,6 +160,10 @@ function PocketSettingsTab({ rpcCall }) {
 
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
+  const tunnelPhase = tunnelState?.phase ?? 'idle';
+  const tunnelStarting = ['downloading', 'starting', 'registering'].includes(tunnelPhase);
+  const tunnelStateDetail = tunnelState?.detail ?? '';
+  const tunnelStateStarted = tunnelState?.startedAt ?? null;
 
   return h('div', { style: styles.card },
     h('div', null,
@@ -198,8 +208,11 @@ function PocketSettingsTab({ rpcCall }) {
           h('button', { style: styles.btn, onClick: stopTunnel }, '关闭公网 | Stop'),
         )
         : h('div', null,
-          h('button', { style: styles.primary, onClick: startTunnel, disabled: busy }, busy ? '开启中…（首次需下载 cloudflared）' : '开启公网访问 | Enable anywhere'),
-          h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人'),
+          h('button', { style: styles.primary, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? '开启中…' : '开启公网访问 | Enable anywhere'),
+          tunnelStarting
+            ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } },
+              `⏳ ${tunnelStateDetail}（已等待 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1000)} 秒）…`)
+            : h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人'),
         ),
     ),
 

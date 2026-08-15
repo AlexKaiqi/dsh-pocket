@@ -40,6 +40,7 @@ export function redactStatus(s) {
     tunnelRunning: s?.tunnelRunning === true,
     tunnelUrl: s?.tunnelUrl ?? null,
     tunnelQr: s?.tunnelQr ?? null,
+    tunnelState: s?.tunnelState ?? { phase: 'idle' },
     dshPort: s?.dshPort ?? null,
   };
 }

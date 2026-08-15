@@ -96,3 +96,25 @@ test('RPC：status / tunnel.start / tunnel.stop / 未知端点', async () => {
 
   await service.dispose();
 });
+
+test('隧道进度：startTunnel 阶段透出到 status.tunnelState', async () => {
+  const internals = {
+    ...stubInternals(),
+    startTunnel: async ({ onPhase }) => {
+      onPhase('downloading');
+      onPhase('registering');
+      onPhase('ready');
+      return { url: 'https://x.trycloudflare.com', kill: () => {} };
+    },
+  };
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  await service.startProxy();
+  await service.startTunnel();
+  const s = await service.status();
+  assert.equal(s.tunnelState.phase, 'ready');
+  assert.ok(s.tunnelState.startedAt > 0, '开始时间已记录');
+  assert.ok(s.tunnelState.detail.length > 0);
+  service.stopTunnel();
+  const after = await service.status();
+  assert.equal(after.tunnelState.phase, 'idle');
+});
