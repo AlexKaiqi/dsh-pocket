@@ -1341,6 +1341,8 @@ function PocketSettingsTab({ rpcCall }) {
         const latest = typeof meta?.version === "string" ? meta.version : null;
         if (latest && v.current && compareVersions(latest, v.current) > 0) {
           setUpdateInfo({ current: v.current, latest, updating: false, result: null });
+        } else if (v.current && v.loaded && compareVersions(v.current, v.loaded) > 0) {
+          setUpdateInfo({ current: v.current, latest: v.current, updating: false, result: "ok", updated: true });
         }
       } catch {
       }
@@ -1449,7 +1451,11 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)(
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
-        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`),
+        (0, import_react2.createElement)(
+          "div",
+          { style: { fontWeight: 600, fontSize: 13 } },
+          updateInfo.updated ? `\u2705 \u5DF2\u66F4\u65B0 v${updateInfo.current}\uFF0C\u91CD\u542F\u751F\u6548 | Updated \u2014 restart to apply` : `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`
+        ),
         updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : (0, import_react2.createElement)("button", { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? "\u91CD\u542F\u4E2D\u2026" : "\u{1F504} \u91CD\u542F dsh web \u751F\u6548 | Restart now")
       ),
       (0, import_react2.createElement)(

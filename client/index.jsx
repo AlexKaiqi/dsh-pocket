@@ -91,6 +91,7 @@ function PocketSettingsTab({ rpcCall }) {
   }, []);
 
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
+  // 两种情况显示横幅：① 有新版可更新；② 磁盘已更新但进程还是旧代码（重启生效）
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -101,6 +102,9 @@ function PocketSettingsTab({ rpcCall }) {
         const latest = typeof meta?.version === 'string' ? meta.version : null;
         if (latest && v.current && compareVersions(latest, v.current) > 0) {
           setUpdateInfo({ current: v.current, latest, updating: false, result: null });
+        } else if (v.current && v.loaded && compareVersions(v.current, v.loaded) > 0) {
+          // 已更新未重启：显示「已更新，重启生效」+ 重启按钮
+          setUpdateInfo({ current: v.current, latest: v.current, updating: false, result: 'ok', updated: true });
         }
       } catch { /* 网络失败静默 */ }
     })();
@@ -200,7 +204,10 @@ function PocketSettingsTab({ rpcCall }) {
     // 更新提示
     updateInfo ? h('div', { style: { ...styles.block, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)' }, borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
-        h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📦 新版本 v${updateInfo.latest} | Update available`),
+        h('div', { style: { fontWeight: 600, fontSize: 13 } },
+          updateInfo.updated
+            ? `✅ 已更新 v${updateInfo.current}，重启生效 | Updated — restart to apply`
+            : `📦 新版本 v${updateInfo.latest} | Update available`),
         updateInfo.result !== 'ok'
           ? h('button', { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? '更新中…' : `更新到 v${updateInfo.latest} | Update`)
           : h('button', { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? '重启中…' : '🔄 重启 dsh web 生效 | Restart now'),

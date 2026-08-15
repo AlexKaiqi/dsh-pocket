@@ -221,3 +221,21 @@ test('RPC：restartNotice 读取抛错时 status 优雅降级为 null', async ()
   assert.equal(s.value.restartNotice, null, '读取失败不阻塞 status');
   await service.dispose();
 });
+
+test('RPC：version 返回磁盘版本 current 与启动版本 loaded', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  installPocketRpc({ connection: conn }, {
+    service,
+    runUpdate: { currentVersion: () => '1.0.15', loadedVersion: () => '1.0.14', perform: async () => ({ ok: true }) },
+    log: { error() {}, warn() {} },
+  });
+
+  const v = await conn.handler(POCKET_ENDPOINTS.version, {});
+  assert.equal(v.ok, true);
+  assert.equal(v.value.current, '1.0.15', 'current 是磁盘实时版本');
+  assert.equal(v.value.loaded, '1.0.14', 'loaded 是进程启动版本');
+
+  await service.dispose();
+});
