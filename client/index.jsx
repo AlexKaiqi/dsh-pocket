@@ -188,13 +188,14 @@ export function apply(ctx) {
   const rpcCall = (endpoint, payload, signal) =>
     ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
 
-  ctx.slots.inject('settings.plugins.tab', () =>
+  // 设置一级入口（与 通用设置/模型/插件 同级，order 1 = 通用之后、最外层）
+  ctx.slots.inject('settings.section', () =>
     ctx.slots.register(
       {
-        name: 'settings.plugins.tab',
+        name: 'settings.section',
         id: 'pocket',
-        order: 10,
-        label: '手机访问',
+        order: 1,
+        label: () => '手机访问',
         inject: () => ({ rpcCall }),
       },
       PocketSettingsTab,

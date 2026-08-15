@@ -1413,13 +1413,13 @@ function apply(ctx) {
   mobileApply(ctx);
   const rpcCall = (endpoint, payload, signal) => ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
   ctx.slots.inject(
-    "settings.plugins.tab",
+    "settings.section",
     () => ctx.slots.register(
       {
-        name: "settings.plugins.tab",
+        name: "settings.section",
         id: "pocket",
-        order: 10,
-        label: "\u624B\u673A\u8BBF\u95EE",
+        order: 1,
+        label: () => "\u624B\u673A\u8BBF\u95EE",
         inject: () => ({ rpcCall })
       },
       PocketSettingsTab
