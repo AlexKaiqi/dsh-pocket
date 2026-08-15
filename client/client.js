@@ -44,7 +44,8 @@ var POCKET_ENDPOINTS = Object.freeze({
   pushStatus: "push.status",
   pushSetEnabled: "push.setEnabled",
   version: "pocket.version",
-  update: "pocket.update"
+  update: "pocket.update",
+  restart: "pocket.restart"
 });
 function compareVersions(a, b) {
   const pa = String(a).replace(/^v/, "").split(".");
@@ -1346,6 +1347,14 @@ function PocketSettingsTab({ rpcCall }) {
       alive = false;
     };
   }, []);
+  const restartPocket = async () => {
+    setUpdateInfo((u) => ({ ...u, restarting: true }));
+    try {
+      await call(POCKET_ENDPOINTS.restart, {});
+    } catch (err) {
+      setUpdateInfo((u) => ({ ...u, restarting: false, result: "fail", output: err.message }));
+    }
+  };
   const runUpdate = async () => {
     setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
     try {
@@ -1414,9 +1423,9 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
       ),
       (0, import_react2.createElement)(
-        "a",
-        { href: "https://github.com/shaobeichen/dsh-pocket/issues", target: "_blank", rel: "noreferrer", style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", textDecoration: "none", whiteSpace: "nowrap" } },
-        "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668 | by \u5C11\u5317\u6668"
+        "div",
+        { style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", whiteSpace: "nowrap" } },
+        "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"
       )
     ),
     // 更新提示
@@ -1427,7 +1436,7 @@ function PocketSettingsTab({ rpcCall }) {
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
         (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`),
-        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : (0, import_react2.createElement)("button", { style: styles.btn, onClick: () => window.location.reload() }, "\u{1F504} \u5237\u65B0\u9875\u9762 | Refresh")
+        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : (0, import_react2.createElement)("button", { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? "\u91CD\u542F\u4E2D\u2026" : "\u{1F504} \u91CD\u542F dsh web \u751F\u6548 | Restart now")
       ),
       (0, import_react2.createElement)(
         "div",
@@ -1487,7 +1496,17 @@ function PocketSettingsTab({ rpcCall }) {
         !pushEnabled ? "\u5DF2\u5173\u95ED\uFF1Aagent \u8DD1\u5B8C\u4E0D\u4F1A\u63A8\u9001 | off: no notifications" : pushState === "on" ? "\u5DF2\u5F00\u542F\uFF1Aagent \u8DD1\u5B8C/\u51FA\u9519\u65F6\u624B\u673A\u6536\u5230\u901A\u77E5 | on: notified when tasks finish or fail" : pushState === "unsupported" ? "\u5DF2\u5F00\u542F\uFF08\u4F46\u5F53\u524D\u6D4F\u89C8\u5668\u4E0D\u652F\u6301\u63A8\u9001\uFF09| on, but this browser does not support push" : pushState === "insecure" ? "\u5DF2\u5F00\u542F\uFF0C\u4F46\u5F53\u524D\u8DEF\u5F84\u4E0D\u662F HTTPS\u2014\u2014\u63A8\u9001\u9700\u8981\u516C\u7F51\u96A7\u9053\u6216 localhost | on, but push needs HTTPS (public tunnel) or localhost" : pushState === "checking" ? "\u68C0\u67E5\u4E2D\u2026 | checking\u2026" : "\u63A8\u9001\u672A\u751F\u6548 | push not active"
       )
     ),
-    error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null
+    error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null,
+    // 页面最底部：反馈入口
+    (0, import_react2.createElement)(
+      "div",
+      { style: { ...styles.block, textAlign: "center" } },
+      (0, import_react2.createElement)(
+        "a",
+        { href: "https://github.com/shaobeichen/dsh-pocket/issues", target: "_blank", rel: "noreferrer", style: { fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", textDecoration: "none" } },
+        "\u6709\u95EE\u9898\uFF1F\u6B22\u8FCE\u5230 GitHub Issues \u53CD\u9988 \u{1F64F} | Questions? Open an issue on GitHub"
+      )
+    )
   );
 }
 function apply(ctx) {

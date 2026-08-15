@@ -105,6 +105,17 @@ function PocketSettingsTab({ rpcCall }) {
     return () => { alive = false; };
   }, []);
 
+  // 重启宿主（更新生效必需：刷新页面不会重载服务端代码）
+  const restartPocket = async () => {
+    setUpdateInfo((u) => ({ ...u, restarting: true }));
+    try {
+      await call(POCKET_ENDPOINTS.restart, {});
+      // 宿主即将退出重启，无需更多处理
+    } catch (err) {
+      setUpdateInfo((u) => ({ ...u, restarting: false, result: 'fail', output: err.message }));
+    }
+  };
+
   // 一键更新：调宿主 dsh plugin update
   const runUpdate = async () => {
     setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
@@ -171,8 +182,8 @@ function PocketSettingsTab({ rpcCall }) {
         h('strong', null, '📱 手机访问 | Phone access'),
         h('div', { style: styles.muted }, '手机扫码打开的就是电脑上的这个界面，实时同步 | the phone shows this exact screen, live'),
       ),
-      h('a', { href: 'https://github.com/shaobeichen/dsh-pocket/issues', target: '_blank', rel: 'noreferrer', style: { fontSize: 12, color: 'var(--dsw-alias-label-tertiary,#8b93a1)', textDecoration: 'none', whiteSpace: 'nowrap' } },
-        '开发者：程序员少北晨 | by 少北晨'),
+      h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-tertiary,#8b93a1)', whiteSpace: 'nowrap' } },
+        '开发者：程序员少北晨'),
     ),
 
     // 更新提示
@@ -181,7 +192,7 @@ function PocketSettingsTab({ rpcCall }) {
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📦 新版本 v${updateInfo.latest} | Update available`),
         updateInfo.result !== 'ok'
           ? h('button', { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? '更新中…' : `更新到 v${updateInfo.latest} | Update`)
-          : h('button', { style: styles.btn, onClick: () => window.location.reload() }, '🔄 刷新页面 | Refresh'),
+          : h('button', { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? '重启中…' : '🔄 重启 dsh web 生效 | Restart now'),
       ),
       h('div', { style: styles.muted, marginTop: 4 },
         updateInfo.result === 'ok' ? '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web'
@@ -238,6 +249,12 @@ function PocketSettingsTab({ rpcCall }) {
     ),
 
     error ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', fontSize: 12, marginTop: 8 } }, `❌ ${error}`) : null,
+
+    // 页面最底部：反馈入口
+    h('div', { style: { ...styles.block, textAlign: 'center' } },
+      h('a', { href: 'https://github.com/shaobeichen/dsh-pocket/issues', target: '_blank', rel: 'noreferrer', style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', textDecoration: 'none' } },
+        '有问题？欢迎到 GitHub Issues 反馈 🙏 | Questions? Open an issue on GitHub'),
+    ),
   );
 }
 

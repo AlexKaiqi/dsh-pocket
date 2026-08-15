@@ -12,6 +12,7 @@ export const POCKET_ENDPOINTS = Object.freeze({
   pushSetEnabled: 'push.setEnabled',
   version: 'pocket.version',
   update: 'pocket.update',
+  restart: 'pocket.restart',
 });
 
 /** 语义化版本比较：a > b 返回正数，相等 0，a < b 负数（仅数字段；带预发布后缀的更旧）。 */

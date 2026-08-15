@@ -118,3 +118,34 @@ test('隧道进度：startTunnel 阶段透出到 status.tunnelState', async () =
   const after = await service.status();
   assert.equal(after.tunnelState.phase, 'idle');
 });
+
+test('自重启：restartHost 用当前 argv 拉起 detached 新进程并退出旧进程', async () => {
+  const { restartHost } = await import('../lib/restart.js');
+  let spawned = null;
+  const calls = [];
+  const result = restartHost({
+    exitDelayMs: 10,
+    internals: {
+      spawn: (file, args, opts) => { spawned = { file, args, detached: opts.detached }; calls.push('spawn'); return { unref: () => {} }; },
+      exit: (code) => calls.push('exit:' + code),
+    },
+  });
+  assert.equal(result.spawned, true);
+  assert.equal(spawned.file, process.argv[0], '用 node 重启');
+  assert.deepEqual(spawned.args, [process.argv[1], ...process.argv.slice(2)], '重放启动参数');
+  assert.equal(spawned.detached, true, 'detached 脱离父进程');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.ok(calls.includes('exit:0'), '短暂等待后旧进程退出');
+});
+
+test('自重启失败：spawn 抛错 → 返回 spawned:false', async () => {
+  const { restartHost } = await import('../lib/restart.js');
+  const result = restartHost({
+    internals: {
+      spawn: () => { throw new Error('boom'); },
+      exit: () => {},
+    },
+  });
+  assert.equal(result.spawned, false);
+  assert.match(result.error, /boom/);
+});
