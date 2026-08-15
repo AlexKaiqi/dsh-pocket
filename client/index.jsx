@@ -85,9 +85,15 @@ function PocketSettingsTab({ rpcCall }) {
     return () => clearInterval(t);
   }, []);
 
-  // 读取宿主开关状态
+  // 读取宿主开关状态；已开启时同步检查浏览器订阅状态（否则刷新后一直显示"检查中…"）
   useEffect(() => {
-    call(POCKET_ENDPOINTS.pushStatus, {}).then((s) => setPushEnabled(s.enabled)).catch(() => {});
+    (async () => {
+      try {
+        const s = await call(POCKET_ENDPOINTS.pushStatus, {});
+        setPushEnabled(s.enabled);
+        if (s.enabled) setPushState(await setupPush(rpcCall));
+      } catch { /* 忽略瞬时失败 */ }
+    })();
   }, []);
 
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
@@ -116,8 +122,13 @@ function PocketSettingsTab({ rpcCall }) {
     setUpdateInfo((u) => ({ ...u, restarting: true }));
     try {
       await call(POCKET_ENDPOINTS.restart, {});
-      // 宿主即将退出重启，无需更多处理
     } catch (err) {
+      // 宿主 500ms 后自杀，RPC 响应可能来不及送达——网络断连视为「已请求重启」
+      const msg = String(err?.message ?? '');
+      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed/i.test(msg)) {
+        setUpdateInfo((u) => ({ ...u, restarting: true, result: 'ok' }));
+        return;
+      }
       setUpdateInfo((u) => ({ ...u, restarting: false, result: 'fail', output: err.message }));
     }
   };
@@ -135,27 +146,35 @@ function PocketSettingsTab({ rpcCall }) {
 
   // 开启推送：宿主开关开 + 浏览器订阅（安全上下文才有效）
   const enablePush = async () => {
-    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
-    setPushEnabled(true);
-    setPushState(await setupPush(rpcCall));
+    try {
+      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
+      setPushEnabled(true);
+      setPushState(await setupPush(rpcCall));
+    } catch (err) {
+      setError(err?.message ?? '推送开启失败 | failed to enable push');
+    }
   };
 
   // 关闭推送：取消浏览器订阅 + 宿主开关关
   const disablePush = async () => {
     try {
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.getRegistration('/pocket-sw.js');
-        const sub = await reg?.pushManager?.getSubscription();
-        if (sub) {
-          const endpoint = sub.endpoint;
-          await sub.unsubscribe();
-          await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration('/pocket-sw.js');
+          const sub = await reg?.pushManager?.getSubscription();
+          if (sub) {
+            const endpoint = sub.endpoint;
+            await sub.unsubscribe();
+            await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
+          }
         }
-      }
-    } catch { /* 忽略 */ }
-    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
-    setPushEnabled(false);
-    setPushState('off');
+      } catch { /* 浏览器侧失败不影响宿主开关 */ }
+      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
+      setPushEnabled(false);
+      setPushState('off');
+    } catch (err) {
+      setError(err?.message ?? '推送关闭失败 | failed to disable push');
+    }
   };
 
   const startTunnel = async () => {

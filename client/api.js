@@ -15,20 +15,22 @@ export const POCKET_ENDPOINTS = Object.freeze({
   restart: 'pocket.restart',
 });
 
-/** 语义化版本比较：a > b 返回正数，相等 0，a < b 负数（仅数字段；带预发布后缀的更旧）。 */
+/** 语义化版本比较：a > b 返回正数，相等 0，a < b 负数（数字段 + 预发布后缀）。 */
 export function compareVersions(a, b) {
-  const pa = String(a).replace(/^v/, '').split('.');
-  const pb = String(b).replace(/^v/, '').split('.');
+  const pa = String(a).replace(/^[vV]/, '').split('.');
+  const pb = String(b).replace(/^[vV]/, '').split('.');
   for (let i = 0; i < 3; i++) {
     const x = parseInt(pa[i], 10) || 0;
     const y = parseInt(pb[i], 10) || 0;
     if (x !== y) return x - y;
   }
-  // 数字段相等：带预发布（-）的更旧
-  const aPre = /-/.test(pa[2] ?? '');
-  const bPre = /-/.test(pb[2] ?? '');
-  if (aPre !== bPre) return aPre ? -1 : 1;
-  return 0;
+  // 数字段相等：无预发布后缀的更新；都有后缀时按后缀字典序（alpha < beta < rc…）
+  const aPre = String(a).replace(/^[vV]/, '').match(/-.*$/)?.[0] ?? '';
+  const bPre = String(b).replace(/^[vV]/, '').match(/-.*$/)?.[0] ?? '';
+  if (!aPre && !bPre) return 0;
+  if (!aPre) return 1;
+  if (!bPre) return -1;
+  return aPre < bPre ? -1 : aPre > bPre ? 1 : 0;
 }
 
 /** 浏览器可见的状态字段（无敏感信息；含二维码 data URL）。 */

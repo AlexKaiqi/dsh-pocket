@@ -48,17 +48,19 @@ var POCKET_ENDPOINTS = Object.freeze({
   restart: "pocket.restart"
 });
 function compareVersions(a, b) {
-  const pa = String(a).replace(/^v/, "").split(".");
-  const pb = String(b).replace(/^v/, "").split(".");
+  const pa = String(a).replace(/^[vV]/, "").split(".");
+  const pb = String(b).replace(/^[vV]/, "").split(".");
   for (let i = 0; i < 3; i++) {
     const x = parseInt(pa[i], 10) || 0;
     const y = parseInt(pb[i], 10) || 0;
     if (x !== y) return x - y;
   }
-  const aPre = /-/.test(pa[2] ?? "");
-  const bPre = /-/.test(pb[2] ?? "");
-  if (aPre !== bPre) return aPre ? -1 : 1;
-  return 0;
+  const aPre = String(a).replace(/^[vV]/, "").match(/-.*$/)?.[0] ?? "";
+  const bPre = String(b).replace(/^[vV]/, "").match(/-.*$/)?.[0] ?? "";
+  if (!aPre && !bPre) return 0;
+  if (!aPre) return 1;
+  if (!bPre) return -1;
+  return aPre < bPre ? -1 : aPre > bPre ? 1 : 0;
 }
 function redactStatus(s) {
   return {
@@ -1328,8 +1330,14 @@ function PocketSettingsTab({ rpcCall }) {
     return () => clearInterval(t);
   }, []);
   (0, import_react2.useEffect)(() => {
-    call(POCKET_ENDPOINTS.pushStatus, {}).then((s) => setPushEnabled(s.enabled)).catch(() => {
-    });
+    (async () => {
+      try {
+        const s = await call(POCKET_ENDPOINTS.pushStatus, {});
+        setPushEnabled(s.enabled);
+        if (s.enabled) setPushState(await setupPush(rpcCall));
+      } catch {
+      }
+    })();
   }, []);
   (0, import_react2.useEffect)(() => {
     let alive = true;
@@ -1356,6 +1364,11 @@ function PocketSettingsTab({ rpcCall }) {
     try {
       await call(POCKET_ENDPOINTS.restart, {});
     } catch (err) {
+      const msg = String(err?.message ?? "");
+      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed/i.test(msg)) {
+        setUpdateInfo((u) => ({ ...u, restarting: true, result: "ok" }));
+        return;
+      }
       setUpdateInfo((u) => ({ ...u, restarting: false, result: "fail", output: err.message }));
     }
   };
@@ -1369,26 +1382,34 @@ function PocketSettingsTab({ rpcCall }) {
     }
   };
   const enablePush = async () => {
-    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
-    setPushEnabled(true);
-    setPushState(await setupPush(rpcCall));
+    try {
+      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: true });
+      setPushEnabled(true);
+      setPushState(await setupPush(rpcCall));
+    } catch (err) {
+      setError(err?.message ?? "\u63A8\u9001\u5F00\u542F\u5931\u8D25 | failed to enable push");
+    }
   };
   const disablePush = async () => {
     try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.getRegistration("/pocket-sw.js");
-        const sub = await reg?.pushManager?.getSubscription();
-        if (sub) {
-          const endpoint = sub.endpoint;
-          await sub.unsubscribe();
-          await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
+      try {
+        if ("serviceWorker" in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration("/pocket-sw.js");
+          const sub = await reg?.pushManager?.getSubscription();
+          if (sub) {
+            const endpoint = sub.endpoint;
+            await sub.unsubscribe();
+            await call(POCKET_ENDPOINTS.pushUnsubscribe, { endpoint });
+          }
         }
+      } catch {
       }
-    } catch {
+      await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
+      setPushEnabled(false);
+      setPushState("off");
+    } catch (err) {
+      setError(err?.message ?? "\u63A8\u9001\u5173\u95ED\u5931\u8D25 | failed to disable push");
     }
-    await call(POCKET_ENDPOINTS.pushSetEnabled, { enabled: false });
-    setPushEnabled(false);
-    setPushState("off");
   };
   const startTunnel = async () => {
     setBusy(true);

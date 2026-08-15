@@ -157,7 +157,15 @@ test('自重启：restartHost 用 detached 辅助进程交接，旧进程随后�
   assert.equal(helper.detached, true, '辅助进程 detached');
   const code = helper.args[1];
   assert.ok(code.includes(JSON.stringify(process.argv[0])), '辅助代码含 node 路径');
-  assert.ok(code.includes('setTimeout'), '辅助代码含 1.5s 交接等待');
+  assert.ok(code.includes('waitPort'), '辅助代码含端口释放探测（替代固定延时）');
+  assert.ok(code.includes('setTimeout'), '辅助代码含轮询延时');
+  // helper 代码必须是可执行的有效 JS（防拼接语法错误 → 重启静默失败）
+  const vm = await import('node:vm');
+  try {
+    vm.compileFunction(code, [], { filename: 'restart-helper.js' });
+  } catch (e) {
+    assert.fail('helper 代码语法错误: ' + e.message);
+  }
   await new Promise((r) => setTimeout(r, 600));
   assert.ok(calls.some((c) => typeof c === 'string' && c.startsWith('kill:')), '短暂等待后旧进程退出');
 });
@@ -236,6 +244,35 @@ test('RPC：version 返回磁盘版本 current 与启动版本 loaded', async ()
   assert.equal(v.ok, true);
   assert.equal(v.value.current, '1.0.15', 'current 是磁盘实时版本');
   assert.equal(v.value.loaded, '1.0.14', 'loaded 是进程启动版本');
+
+  await service.dispose();
+});
+
+test('RPC：push 传 promise（插件启动早期）也能正常调用', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  installPocketRpc({ connection: conn }, {
+    service,
+    push: Promise.resolve({
+      vapidPublicKey: () => 'pub',
+      count: () => 2,
+      subscribe: async () => true,
+      unsubscribe: async () => true,
+      isEnabled: () => true,
+      setEnabled: async () => true,
+    }),
+    log: { error() {}, warn() {} },
+  });
+
+  const st = await conn.handler(POCKET_ENDPOINTS.pushStatus, {});
+  assert.equal(st.ok, true);
+  assert.equal(st.value.enabled, true, 'promise resolve 后可用');
+  assert.equal(st.value.count, 2);
+
+  const key = await conn.handler(POCKET_ENDPOINTS.pushVapidKey, {});
+  assert.equal(key.ok, true);
+  assert.equal(key.value.publicKey, 'pub');
 
   await service.dispose();
 });

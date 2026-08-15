@@ -12,6 +12,7 @@ import { createPushService } from '../lib/push.mjs';
 function stubWebPush() {
   const sent = [];
   const deadEndpoints = new Set();
+  const fail500 = new Set();
   return {
     generateVAPIDKeys: () => ({ publicKey: 'pub-key-1', privateKey: 'priv-key-1' }),
     setVapidDetails: () => {},
@@ -22,9 +23,15 @@ function stubWebPush() {
         e.statusCode = 410;
         throw e;
       }
+      if (fail500.has(subscription.endpoint)) {
+        const e = new Error('server error');
+        e.statusCode = 500;
+        throw e;
+      }
     },
     sent,
     killEndpoint(ep) { deadEndpoints.add(ep); },
+    failEndpoint(ep) { fail500.add(ep); },
   };
 }
 
@@ -82,6 +89,27 @@ test('失效订阅（410）自动清理', async () => {
   assert.equal(persisted[0].endpoint, SUB_B.endpoint);
 });
 
+test('非失效错误（500）：订阅保留、其他订阅照常发、记日志', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'push-'));
+  const wp = stubWebPush();
+  const warns = [];
+  const push = await createPushService({
+    home,
+    webpush: wp,
+    log: { warn: (...a) => warns.push(a.join(' ')) },
+    internals: { mkdir, write: writeFile, read: readFile },
+  });
+  await push.subscribe(SUB_A);
+  await push.subscribe(SUB_B);
+  wp.failEndpoint(SUB_A.endpoint);
+
+  const sent = await push.notify({ title: 't', body: 'b' });
+  assert.equal(sent, 1, 'A 失败但 B 成功');
+  assert.equal(push.count(), 2, '500 不是失效，订阅保留');
+  assert.equal(warns.length, 1, '失败有日志');
+  assert.match(warns[0], /推送失败/);
+});
+
 test('无订阅时 notify 返回 0，不调用 web-push', async () => {
   const home = await mkdtemp(join(tmpdir(), 'push-'));
   const wp = stubWebPush();
@@ -125,6 +153,10 @@ test('compareVersions：语义化版本比较', async () => {
   assert.equal(compareVersions('1.0.4', '1.0.4'), 0);
   assert.ok(compareVersions('1.10.0', '1.9.9') > 0, '两位数字正确比较');
   assert.ok(compareVersions('1.0.4', '1.0.4-rc.1') > 0, '预发布视为更旧');
+  assert.ok(compareVersions('1.0.4-rc.1', '1.0.4') < 0, '反过来更旧');
+  assert.ok(compareVersions('1.0.4-alpha', '1.0.4-beta') < 0, '预发布后缀按字典序');
+  assert.ok(compareVersions('1.0.4-beta.2', '1.0.4-beta.1') > 0, '预发布后缀比较');
+  assert.equal(compareVersions('V1.0.4', '1.0.4'), 0, '大写 V 也剥掉');
 });
 
 test('默认路径（不注入 stub）：createPushService 能加载真实 web-push（require 修复回归）', async () => {
