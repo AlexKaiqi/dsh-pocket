@@ -123,3 +123,28 @@ test('WS 首帧（握手后立即发出，进 upgrade head）必须送达上游�
     await new Promise((r) => up.server.close(r));
   }
 });
+
+test('HTML 注入：非安全上下文 polyfill 只注入 HTML 文档，不碰 JS/CSS', async () => {
+  // 假上游：HTML 文档 + JS 资源
+  const up = createServer((req, res) => {
+    if (req.url === '/') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end('<!doctype html><head><title>x</title></head><body>app</body>');
+    } else {
+      res.writeHead(200, { 'content-type': 'application/javascript' });
+      res.end('console.log("asset");');
+    }
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
+  try {
+    const html = await (await fetch(`http://127.0.0.1:${proxy.port}/`)).text();
+    assert.ok(html.includes('randomUUID'), 'HTML 注入 polyfill');
+    assert.ok(html.indexOf('randomUUID') < html.indexOf('</head>'), '注入在 head 内、app 脚本之前');
+    const js = await (await fetch(`http://127.0.0.1:${proxy.port}/app.js`)).text();
+    assert.ok(!js.includes('randomUUID'), 'JS 资源不注入');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.close(r));
+  }
+});
