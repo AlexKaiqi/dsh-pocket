@@ -45,7 +45,11 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
-      if (s.restartNotice) setRestartNotice(true);
+      if (s.restartNotice) {
+        // 新进程确认起来了：显示一次「已重启」，并清掉旧的更新横幅（单状态，不并存）
+        setRestartNotice(true);
+        setUpdateInfo(null);
+      }
     } catch { /* 忽略瞬时失败 */ }
   };
 
@@ -80,11 +84,16 @@ function PocketSettingsTab({ rpcCall }) {
   const restartPocket = async () => {
     setUpdateInfo((u) => ({ ...u, restarting: true }));
     try {
-      await call(POCKET_ENDPOINTS.restart, {});
+      // 宿主 500ms 后自杀，RPC 响应可能来不及送达 → 3 秒超时兜底，别让按钮永远卡「重启中…」
+      await Promise.race([
+        call(POCKET_ENDPOINTS.restart, {}),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('restart requested (no reply within 3s)')), 3000)),
+      ]);
+      setUpdateInfo((u) => ({ ...u, restarting: true, result: 'ok' }));
     } catch (err) {
-      // 宿主 500ms 后自杀，RPC 响应可能来不及送达——网络断连视为「已请求重启」
+      // 网络断连/超时同样视为「已请求重启」——旧进程即将退出，等新进程起来后刷新即可
       const msg = String(err?.message ?? '');
-      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed/i.test(msg)) {
+      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed|timeout/i.test(msg)) {
         setUpdateInfo((u) => ({ ...u, restarting: true, result: 'ok' }));
         return;
       }
@@ -92,12 +101,18 @@ function PocketSettingsTab({ rpcCall }) {
     }
   };
 
-  // 一键更新：调宿主 dsh plugin update
+  // 一键更新：调宿主 dsh plugin update（成功后宿主自动重启生效，用户只点一次）
   const runUpdate = async () => {
     setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
     try {
       const r = await call(POCKET_ENDPOINTS.update, {});
-      setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? 'ok' : 'fail', output: r.output ?? r.error }));
+      setUpdateInfo((u) => ({
+        ...u,
+        updating: false,
+        result: r.ok ? 'ok' : 'fail',
+        autoRestart: r.autoRestart === true,
+        output: r.output ?? r.error,
+      }));
     } catch (err) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: 'fail', output: err.message }));
     }
@@ -143,22 +158,28 @@ function PocketSettingsTab({ rpcCall }) {
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔄 已重启 | Restarted'),
         h('button', { style: styles.btn, onClick: () => setRestartNotice(false) }, '知道了 | OK'),
       ),
-      h('div', { style: styles.muted, marginTop: 4, wordBreak: 'break-all' }, '进程在后台运行（不挂终端）。如需停止：lsof -ti :3080 | xargs kill -9'),
+      h('div', { style: styles.muted, marginTop: 4, wordBreak: 'break-all' }, `进程在后台运行（不挂终端）。如需停止：lsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`),
     ) : null,
 
-    // 更新提示——左侧黄色色条（提示有新版本）
+    // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存
     updateInfo ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', { style: { fontWeight: 600, fontSize: 13 } },
           updateInfo.updated
             ? `✅ 已更新 v${updateInfo.current}，重启生效 | Updated — restart to apply`
-            : `📦 新版本 v${updateInfo.latest} | Update available`),
+            : updateInfo.result === 'ok'
+              ? (updateInfo.autoRestart ? `✅ 已更新 v${updateInfo.latest}，正在自动重启… | updated — restarting…` : `✅ 已更新 v${updateInfo.latest} | Updated`)
+              : `📦 新版本 v${updateInfo.latest} | Update available`),
         updateInfo.result !== 'ok'
           ? h('button', { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? '更新中…' : `更新到 v${updateInfo.latest} | Update`)
-          : h('button', { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? '重启中…' : '🔄 重启 dsh web 生效 | Restart now'),
+          : updateInfo.autoRestart
+            ? h('button', { style: styles.btn, disabled: true }, '正在重启生效… | restarting…')
+            : h('button', { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? '重启中…' : '🔄 重启 dsh web 生效 | Restart now'),
       ),
       h('div', { style: styles.muted, marginTop: 4 },
-        updateInfo.result === 'ok' ? '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web'
+        updateInfo.result === 'ok'
+          ? (updateInfo.autoRestart ? '✅ 已更新，正在自动重启生效，请稍候刷新 | updated — restarting automatically, refresh shortly'
+            : '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web')
         : updateInfo.result === 'fail' ? `❌ 失败：${updateInfo.output || '未知'}（手动更新：dsh plugin --profile web update dsh-pocket --latest -w）`
         : `当前 v${updateInfo.current} → 最新 v${updateInfo.latest}`),
     ) : null,
@@ -182,7 +203,8 @@ function PocketSettingsTab({ rpcCall }) {
         ? h('div', null,
           h('img', { src: status.tunnelQr, alt: 'Tunnel QR', style: styles.qr }),
           h('div', { style: styles.code }, tunnelUrl),
-          h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启会变）'),
+          h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启自动换新）'),
+          h('div', { style: styles.warn, marginTop: 4 }, '🔑 链接已泄露？重启 dsh web——URL 立即换新，旧链接作废，无安全风险 | URL leaked? Restart dsh web — the URL rotates and the old one dies'),
           h('button', { style: styles.btn, onClick: stopTunnel }, '关闭公网 | Stop'),
         )
         : h('div', null,
@@ -190,7 +212,13 @@ function PocketSettingsTab({ rpcCall }) {
           tunnelStarting
             ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } },
               `⏳ ${tunnelStateDetail}（已等待 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1000)} 秒）…`)
-            : h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人'),
+            : tunnelPhase === 'error'
+              ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-state-error-primary,#dc2626)' } },
+                `❌ 开启失败：${tunnelStateDetail || '未知错误 | failed'}（可重试；若是代理/VPN 问题见 README 排障）`)
+              : h('div', null,
+                h('div', { style: styles.warn, marginTop: 8 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人 | the QR/URL is the key — never share it'),
+                h('div', { style: styles.muted, marginTop: 4 }, '不慎泄露了？重启 dsh web，URL 自动换新、旧链接立即失效 | Leaked it? Restart dsh web — the URL rotates and the old one dies instantly'),
+              ),
         ),
     ),
 

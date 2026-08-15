@@ -55,7 +55,21 @@ function compareVersions(a, b) {
   if (!aPre && !bPre) return 0;
   if (!aPre) return 1;
   if (!bPre) return -1;
-  return aPre < bPre ? -1 : aPre > bPre ? 1 : 0;
+  const aParts = aPre.slice(1).split(".");
+  const bParts = bPre.slice(1).split(".");
+  const len = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < len; i++) {
+    const ax = aParts[i] ?? "";
+    const bx = bParts[i] ?? "";
+    if (ax === bx) continue;
+    const aNum = /^\d+$/.test(ax);
+    const bNum = /^\d+$/.test(bx);
+    if (aNum && bNum) return Number(ax) - Number(bx);
+    if (aNum) return 1;
+    if (bNum) return -1;
+    return ax < bx ? -1 : 1;
+  }
+  return 0;
 }
 function redactStatus(s) {
   return {
@@ -1287,7 +1301,10 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
-      if (s.restartNotice) setRestartNotice(true);
+      if (s.restartNotice) {
+        setRestartNotice(true);
+        setUpdateInfo(null);
+      }
     } catch {
     }
   };
@@ -1319,10 +1336,14 @@ function PocketSettingsTab({ rpcCall }) {
   const restartPocket = async () => {
     setUpdateInfo((u) => ({ ...u, restarting: true }));
     try {
-      await call(POCKET_ENDPOINTS.restart, {});
+      await Promise.race([
+        call(POCKET_ENDPOINTS.restart, {}),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("restart requested (no reply within 3s)")), 3e3))
+      ]);
+      setUpdateInfo((u) => ({ ...u, restarting: true, result: "ok" }));
     } catch (err) {
       const msg = String(err?.message ?? "");
-      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed/i.test(msg)) {
+      if (/connection|socket|fetch|network|abort|cancelled|ECONN|disconnect|closed|timeout/i.test(msg)) {
         setUpdateInfo((u) => ({ ...u, restarting: true, result: "ok" }));
         return;
       }
@@ -1333,7 +1354,13 @@ function PocketSettingsTab({ rpcCall }) {
     setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
     try {
       const r = await call(POCKET_ENDPOINTS.update, {});
-      setUpdateInfo((u) => ({ ...u, updating: false, result: r.ok ? "ok" : "fail", output: r.output ?? r.error }));
+      setUpdateInfo((u) => ({
+        ...u,
+        updating: false,
+        result: r.ok ? "ok" : "fail",
+        autoRestart: r.autoRestart === true,
+        output: r.output ?? r.error
+      }));
     } catch (err) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: "fail", output: err.message }));
     }
@@ -1390,9 +1417,9 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F504} \u5DF2\u91CD\u542F | Restarted"),
         (0, import_react2.createElement)("button", { style: styles.btn, onClick: () => setRestartNotice(false) }, "\u77E5\u9053\u4E86 | OK")
       ),
-      (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, "\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1Alsof -ti :3080 | xargs kill -9")
+      (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, `\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1Alsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`)
     ) : null,
-    // 更新提示——左侧黄色色条（提示有新版本）
+    // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存
     updateInfo ? (0, import_react2.createElement)(
       "div",
       { style: { ...styles.block, borderLeft: "4px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
@@ -1402,14 +1429,14 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)(
           "div",
           { style: { fontWeight: 600, fontSize: 13 } },
-          updateInfo.updated ? `\u2705 \u5DF2\u66F4\u65B0 v${updateInfo.current}\uFF0C\u91CD\u542F\u751F\u6548 | Updated \u2014 restart to apply` : `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`
+          updateInfo.updated ? `\u2705 \u5DF2\u66F4\u65B0 v${updateInfo.current}\uFF0C\u91CD\u542F\u751F\u6548 | Updated \u2014 restart to apply` : updateInfo.result === "ok" ? updateInfo.autoRestart ? `\u2705 \u5DF2\u66F4\u65B0 v${updateInfo.latest}\uFF0C\u6B63\u5728\u81EA\u52A8\u91CD\u542F\u2026 | updated \u2014 restarting\u2026` : `\u2705 \u5DF2\u66F4\u65B0 v${updateInfo.latest} | Updated` : `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`
         ),
-        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : (0, import_react2.createElement)("button", { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? "\u91CD\u542F\u4E2D\u2026" : "\u{1F504} \u91CD\u542F dsh web \u751F\u6548 | Restart now")
+        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : updateInfo.autoRestart ? (0, import_react2.createElement)("button", { style: styles.btn, disabled: true }, "\u6B63\u5728\u91CD\u542F\u751F\u6548\u2026 | restarting\u2026") : (0, import_react2.createElement)("button", { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? "\u91CD\u542F\u4E2D\u2026" : "\u{1F504} \u91CD\u542F dsh web \u751F\u6548 | Restart now")
       ),
       (0, import_react2.createElement)(
         "div",
         { style: styles.muted, marginTop: 4 },
-        updateInfo.result === "ok" ? "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u91CD\u542F dsh web \u751F\u6548 | updated \u2014 restart dsh web" : updateInfo.result === "fail" ? `\u274C \u5931\u8D25\uFF1A${updateInfo.output || "\u672A\u77E5"}\uFF08\u624B\u52A8\u66F4\u65B0\uFF1Adsh plugin --profile web update dsh-pocket --latest -w\uFF09` : `\u5F53\u524D v${updateInfo.current} \u2192 \u6700\u65B0 v${updateInfo.latest}`
+        updateInfo.result === "ok" ? updateInfo.autoRestart ? "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u6B63\u5728\u81EA\u52A8\u91CD\u542F\u751F\u6548\uFF0C\u8BF7\u7A0D\u5019\u5237\u65B0 | updated \u2014 restarting automatically, refresh shortly" : "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u91CD\u542F dsh web \u751F\u6548 | updated \u2014 restart dsh web" : updateInfo.result === "fail" ? `\u274C \u5931\u8D25\uFF1A${updateInfo.output || "\u672A\u77E5"}\uFF08\u624B\u52A8\u66F4\u65B0\uFF1Adsh plugin --profile web update dsh-pocket --latest -w\uFF09` : `\u5F53\u524D v${updateInfo.current} \u2192 \u6700\u65B0 v${updateInfo.latest}`
       )
     ) : null,
     // 局域网
@@ -1435,7 +1462,8 @@ function PocketSettingsTab({ rpcCall }) {
         null,
         (0, import_react2.createElement)("img", { src: status.tunnelQr, alt: "Tunnel QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u4F1A\u53D8\uFF09"),
+        (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u81EA\u52A8\u6362\u65B0\uFF09"),
+        (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 4 }, "\u{1F511} \u94FE\u63A5\u5DF2\u6CC4\u9732\uFF1F\u91CD\u542F dsh web\u2014\u2014URL \u7ACB\u5373\u6362\u65B0\uFF0C\u65E7\u94FE\u63A5\u4F5C\u5E9F\uFF0C\u65E0\u5B89\u5168\u98CE\u9669 | URL leaked? Restart dsh web \u2014 the URL rotates and the old one dies"),
         (0, import_react2.createElement)("button", { style: styles.btn, onClick: stopTunnel }, "\u5173\u95ED\u516C\u7F51 | Stop")
       ) : (0, import_react2.createElement)(
         "div",
@@ -1445,7 +1473,16 @@ function PocketSettingsTab({ rpcCall }) {
           "div",
           { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } },
           `\u23F3 ${tunnelStateDetail}\uFF08\u5DF2\u7B49\u5F85 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1e3)} \u79D2\uFF09\u2026`
-        ) : (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA")
+        ) : tunnelPhase === "error" ? (0, import_react2.createElement)(
+          "div",
+          { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-state-error-primary,#dc2626)" } },
+          `\u274C \u5F00\u542F\u5931\u8D25\uFF1A${tunnelStateDetail || "\u672A\u77E5\u9519\u8BEF | failed"}\uFF08\u53EF\u91CD\u8BD5\uFF1B\u82E5\u662F\u4EE3\u7406/VPN \u95EE\u9898\u89C1 README \u6392\u969C\uFF09`
+        ) : (0, import_react2.createElement)(
+          "div",
+          null,
+          (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 8 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA | the QR/URL is the key \u2014 never share it"),
+          (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4 }, "\u4E0D\u614E\u6CC4\u9732\u4E86\uFF1F\u91CD\u542F dsh web\uFF0CURL \u81EA\u52A8\u6362\u65B0\u3001\u65E7\u94FE\u63A5\u7ACB\u5373\u5931\u6548 | Leaked it? Restart dsh web \u2014 the URL rotates and the old one dies instantly")
+        )
       )
     ),
     error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null,
