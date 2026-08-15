@@ -214,6 +214,34 @@ test('readRestartNotice：真实文件系统（无文件/坏 JSON/过期/有效�
   }
 });
 
+test('consumeRestartNotice：读后即删（横幅只显示一次，不会一直出现）', async () => {
+  const os = await import('node:os');
+  const fsp = await import('node:fs/promises');
+  const path = await import('node:path');
+  const { consumeRestartNotice } = await import('../lib/index.js');
+
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dsh-pocket-consume-'));
+  const prev = process.env.DSH_HOME;
+  process.env.DSH_HOME = dir;
+  try {
+    const noticePath = path.join(dir, 'dsh-pocket', 'restarted.json');
+    await fsp.mkdir(path.dirname(noticePath), { recursive: true });
+    await fsp.writeFile(noticePath, JSON.stringify({ at: Date.now(), pid: 4242 }));
+
+    // 第一次消费：返回标记，且文件被删除
+    const n1 = await consumeRestartNotice();
+    assert.equal(n1.pid, 4242, '第一次消费返回标记');
+    await assert.rejects(fsp.access(noticePath), '文件已删除');
+
+    // 第二次消费：文件没了 → null（横幅不会一直显示）
+    const n2 = await consumeRestartNotice();
+    assert.equal(n2, null, '消费后不再返回');
+  } finally {
+    process.env.DSH_HOME = prev;
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('RPC：restartNotice 读取抛错时 status 优雅降级为 null', async () => {
   const internals = stubInternals();
   const service = createPocketService({ dshPort: 3080, port: 3081, internals });
