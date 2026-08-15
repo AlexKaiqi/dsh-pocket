@@ -1418,7 +1418,7 @@ function PocketSettingsTab({ rpcCall }) {
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
         (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F4E6} \u65B0\u7248\u672C v${updateInfo.latest} | Update available`),
-        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : null
+        updateInfo.result !== "ok" ? (0, import_react2.createElement)("button", { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? "\u66F4\u65B0\u4E2D\u2026" : `\u66F4\u65B0\u5230 v${updateInfo.latest} | Update`) : (0, import_react2.createElement)("button", { style: styles.btn, onClick: () => window.location.reload() }, "\u{1F504} \u5237\u65B0\u9875\u9762 | Refresh")
       ),
       (0, import_react2.createElement)(
         "div",

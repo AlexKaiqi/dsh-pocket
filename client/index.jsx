@@ -177,7 +177,7 @@ function PocketSettingsTab({ rpcCall }) {
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📦 新版本 v${updateInfo.latest} | Update available`),
         updateInfo.result !== 'ok'
           ? h('button', { style: styles.primary, onClick: runUpdate, disabled: updateInfo.updating }, updateInfo.updating ? '更新中…' : `更新到 v${updateInfo.latest} | Update`)
-          : null,
+          : h('button', { style: styles.btn, onClick: () => window.location.reload() }, '🔄 刷新页面 | Refresh'),
       ),
       h('div', { style: styles.muted, marginTop: 4 },
         updateInfo.result === 'ok' ? '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web'
