@@ -1,6 +1,5 @@
 {
   "name": "dsh-pocket",
-  "version": "0.1.1",
   "description": "把 DeepSeek Harness 装进你的口袋：一个包、一个设置页，手机扫码即同步访问电脑上的 DSH（局域网 + 公网，实时同屏）。",
   "type": "module",
   "main": "lib/index.js",
@@ -76,5 +75,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "version": "1.0.0"
 }
