@@ -61,6 +61,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [pushEnabled, setPushEnabled] = useState(true); // 宿主开关
   const [pushState, setPushState] = useState('checking'); // checking|on|unsupported|insecure|off
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
+  const [restartNotice, setRestartNotice] = useState(false); // 重启后提示
   const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result } | null
 
   const call = async (endpoint, payload) => {
@@ -74,6 +75,7 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
+      if (s.restartNotice) setRestartNotice(true);
     } catch { /* 忽略瞬时失败 */ }
   };
 
@@ -186,8 +188,17 @@ function PocketSettingsTab({ rpcCall }) {
         '开发者：程序员少北晨'),
     ),
 
+    // 重启后提示（进程在后台运行，停止方法）
+    restartNotice ? h('div', { style: { ...styles.block, border: '1px solid var(--dsw-alias-brand-primary,#4f6ef7)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
+      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+        h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔄 已重启 | Restarted'),
+        h('button', { style: styles.btn, onClick: () => setRestartNotice(false) }, '知道了 | OK'),
+      ),
+      h('div', { style: styles.muted, marginTop: 4, wordBreak: 'break-all' }, '进程在后台运行（不挂终端）。如需停止：lsof -ti :3080 | xargs kill -9'),
+    ) : null,
+
     // 更新提示
-    updateInfo ? h('div', { style: { ...styles.block, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
+    updateInfo ? h('div', { style: { ...styles.block, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)' }, borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📦 新版本 v${updateInfo.latest} | Update available`),
         updateInfo.result !== 'ok'

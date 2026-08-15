@@ -1306,6 +1306,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [pushEnabled, setPushEnabled] = (0, import_react2.useState)(true);
   const [pushState, setPushState] = (0, import_react2.useState)("checking");
   const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
+  const [restartNotice, setRestartNotice] = (0, import_react2.useState)(false);
   const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
@@ -1317,6 +1318,7 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
+      if (s.restartNotice) setRestartNotice(true);
     } catch {
     }
   };
@@ -1428,10 +1430,22 @@ function PocketSettingsTab({ rpcCall }) {
         "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"
       )
     ),
+    // 重启后提示（进程在后台运行，停止方法）
+    restartNotice ? (0, import_react2.createElement)(
+      "div",
+      { style: { ...styles.block, border: "1px solid var(--dsw-alias-brand-primary,#4f6ef7)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
+      (0, import_react2.createElement)(
+        "div",
+        { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F504} \u5DF2\u91CD\u542F | Restarted"),
+        (0, import_react2.createElement)("button", { style: styles.btn, onClick: () => setRestartNotice(false) }, "\u77E5\u9053\u4E86 | OK")
+      ),
+      (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, "\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1Alsof -ti :3080 | xargs kill -9")
+    ) : null,
     // 更新提示
     updateInfo ? (0, import_react2.createElement)(
       "div",
-      { style: { ...styles.block, border: "1px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
+      { style: { ...styles.block, border: "1px solid var(--dsw-alias-state-warn-primary,#b45309)" }, borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" },
       (0, import_react2.createElement)(
         "div",
         { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },

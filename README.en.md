@@ -101,6 +101,7 @@ DSH's `/api` browser-trust fence only accepts loopback or `--trusted-host` autho
 | Version stuck below 1.x | `^0.x` ranges never jump to 1.x: update with `--latest` (`dsh plugin --profile web update dsh-pocket --latest -w`) |
 | No push on iOS Safari | Safari Web Push requires **"Add to Home Screen"** first, then open from the home-screen icon (Chrome/Android don't need this) |
 | Public `error 1033` | See "Public tunnel troubleshooting" below — usually a local proxy/VPN (Clash etc. TUN mode) killing the tunnel |
+| After "Restart dsh web", the page says the process is running in the background | The new process from in-page self-restart is a detached background process (not attached to your terminal) — that's the standard way to apply updates in-page; stop it with `lsof -ti :3080 \| xargs kill -9` (logs under `$DSH_HOME` as `dsh-pocket-restart-*.log`) |
 
 ## ⚠️ Public tunnel troubleshooting (read first)
 

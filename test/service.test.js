@@ -80,6 +80,7 @@ test('RPC：status / tunnel.start / tunnel.stop / 未知端点', async () => {
   assert.equal(s1.ok, true);
   assert.equal(s1.value.lanUrl, 'http://192.168.1.50:3081');
   assert.ok(s1.value.lanQr.startsWith('data:qr;'), '局域网二维码 data URL');
+  assert.equal(s1.value.restartNotice, null, '无重启标记时 restartNotice 为 null');
 
   const started = await conn.handler(POCKET_ENDPOINTS.tunnelStart, {});
   assert.equal(started.ok, true);
@@ -93,6 +94,23 @@ test('RPC：status / tunnel.start / tunnel.stop / 未知端点', async () => {
   const unknown = await conn.handler('nope', {});
   assert.equal(unknown.ok, false);
   assert.equal(unknown.error.code, 'bad-request');
+
+  await service.dispose();
+});
+
+test('RPC：status 携带重启提示（restartNotice）', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  installPocketRpc({ connection: conn }, {
+    service,
+    restartNotice: () => ({ at: Date.now(), pid: 12345 }),
+    log: { error() {}, warn() {} },
+  });
+
+  const s = await conn.handler(POCKET_ENDPOINTS.status, {});
+  assert.equal(s.ok, true);
+  assert.equal(s.value.restartNotice.pid, 12345, '重启标记随 status 返回');
 
   await service.dispose();
 });
@@ -119,33 +137,39 @@ test('隧道进度：startTunnel 阶段透出到 status.tunnelState', async () =
   assert.equal(after.tunnelState.phase, 'idle');
 });
 
-test('自重启：restartHost 用当前 argv 拉起 detached 新进程并退出旧进程', async () => {
+test('自重启：restartHost 用 detached 辅助进程交接，旧进程随后退出', async () => {
   const { restartHost } = await import('../lib/restart.js');
-  let spawned = null;
   const calls = [];
   const result = restartHost({
-    exitDelayMs: 10,
     internals: {
-      spawn: (file, args, opts) => { spawned = { file, args, detached: opts.detached }; calls.push('spawn'); return { unref: () => {} }; },
-      exit: (code) => calls.push('exit:' + code),
+      spawn: (file, args, opts) => { calls.push({ file, args, detached: opts?.detached }); return { pid: 4242, unref: () => {} }; },
+      kill: (pid) => calls.push('kill:' + pid),
     },
   });
-  assert.equal(result.spawned, true);
-  assert.equal(spawned.file, process.argv[0], '用 node 重启');
-  assert.deepEqual(spawned.args, [process.argv[1], ...process.argv.slice(2)], '重放启动参数');
-  assert.equal(spawned.detached, true, 'detached 脱离父进程');
-  await new Promise((r) => setTimeout(r, 30));
-  assert.ok(calls.includes('exit:0'), '短暂等待后旧进程退出');
+  assert.equal(result.helperPid, 4242, '返回辅助进程 pid');
+  assert.ok(result.logOut.endsWith('.out.log'), '输出日志路径');
+  assert.ok(result.logErr.endsWith('.err.log'), '错误日志路径');
+  // 辅助进程：node -e <helperCode>，detached，代码内含新 dsh 的启动命令
+  assert.equal(calls.length, 1, '只拉起一个辅助进程');
+  const helper = calls[0];
+  assert.equal(helper.file, process.execPath, '用 node 拉起辅助进程');
+  assert.equal(helper.args[0], '-e');
+  assert.equal(helper.detached, true, '辅助进程 detached');
+  const code = helper.args[1];
+  assert.ok(code.includes(JSON.stringify(process.argv[0])), '辅助代码含 node 路径');
+  assert.ok(code.includes('setTimeout'), '辅助代码含 1.5s 交接等待');
+  await new Promise((r) => setTimeout(r, 600));
+  assert.ok(calls.some((c) => typeof c === 'string' && c.startsWith('kill:')), '短暂等待后旧进程退出');
 });
 
-test('自重启失败：spawn 抛错 → 返回 spawned:false', async () => {
+test('自重启失败：spawn 抛错 → 返回 helperPid:null 和错误', async () => {
   const { restartHost } = await import('../lib/restart.js');
   const result = restartHost({
     internals: {
       spawn: () => { throw new Error('boom'); },
-      exit: () => {},
+      kill: () => {},
     },
   });
-  assert.equal(result.spawned, false);
+  assert.equal(result.helperPid, null);
   assert.match(result.error, /boom/);
 });

@@ -101,6 +101,7 @@ DSH 的 `/api` 浏览器信任栅栏只认 loopback 或 `--trusted-host`（官�
 | 版本停在 0.x 升不上去 | `^0.x` 范围不允许升到 1.x：更新用 `--latest`（`dsh plugin --profile web update dsh-pocket --latest -w`） |
 | 手机 iOS 收不到推送 | Safari 的 Web Push 要求**先把网页「添加到主屏幕」**，从主屏幕图标打开后才生效（Chrome/Android 无此要求） |
 | 公网 `error 1033` | 见下方「公网隧道常见问题」——多半是本机代理/VPN（Clash 等 TUN 模式）掐断了隧道 |
+| 点「重启 dsh web」后页面提示进程在后台运行 | 自重启的新进程是 detached 后台进程（不挂终端），是页内更新的标准做法；停止它：`lsof -ti :3080 \| xargs kill -9`（日志在 `$DSH_HOME` 下 `dsh-pocket-restart-*.log`） |
 
 ## ⚠️ 公网隧道常见问题（必读）
 
