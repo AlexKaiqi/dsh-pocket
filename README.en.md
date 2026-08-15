@@ -26,7 +26,7 @@
 
 That's what DSH Pocket does: **install it, scan a QR code, and your phone shows and controls the DeepSeek Harness UI in real time — from anywhere.**
 
-> One-liner: `dsh web` only allows local access by default; DSH Pocket puts a proxy in front of it that safely bridges your phone (see [How it works](#-how-it-works)).
+> One-liner: `dsh web` only allows local access by default; DSH Pocket puts a proxy in front of it that safely bridges your phone.
 
 What it looks like — the phone shows the exact same UI as your computer, live:
 
@@ -78,10 +78,6 @@ Settings → Plugins → **Phone access** → scan the "📶 LAN" QR code → th
 On the same page click "**Enable anywhere**" → wait for the tunnel (first run downloads cloudflared) → scan the "🌐 Public" QR code → works from outside (4G / office network).
 
 > Upgrading: `dsh plugin --profile web update dsh-pocket --latest -w` (`--latest` is required across major versions — a `^0.x` range won't auto-jump to 1.x).
-
-## 🧭 How it works
-
-DSH's `/api` browser-trust fence only accepts loopback or `--trusted-host` authorities (and the official build refuses `0.0.0.0` binding to avoid exposing remote code execution to the network). Pocket rewrites every inbound request's `Host` / `Origin` to `127.0.0.1:<dsh-port>`, so the fence always sees loopback — **no dsh configuration changes needed**. The proxy auto-starts with the plugin; the public tunnel is on demand (cloudflared forced to HTTP/2 over TCP 443 to bypass blocked QUIC/UDP).
 
 ## ⚠️ Security (read first)
 

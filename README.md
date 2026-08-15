@@ -26,7 +26,7 @@
 
 DSH Pocket 就是干这个的：**装上它，手机扫个码，就能实时看到并操控电脑上的 DeepSeek Harness 界面**——人在外面也能用。
 
-> 原理一句话：`dsh web` 默认只允许本机访问，DSH Pocket 在它前面加一层代理，把手机访问安全地接入（详见[「原理」](#-原理)）。
+> 原理一句话：`dsh web` 默认只允许本机访问，DSH Pocket 在它前面加一层代理，把手机访问安全地接入。
 
 实际效果——手机上的界面就是电脑上的界面，实时同步：
 
@@ -78,10 +78,6 @@ npx @deepseek-ai/dsh web
 同一页点「**开启公网访问**」→ 等隧道建立（首次会下载 cloudflared）→ 手机扫「🌐 公网」二维码 → 人在外面（4G/公司网）也能访问。
 
 > 更新到新版本：`dsh plugin --profile web update dsh-pocket --latest -w`（跨大版本时 `--latest` 是必须的，`^0.x` 范围不会自动升到 1.x）。
-
-## 🧭 原理
-
-DSH 的 `/api` 浏览器信任栅栏只认 loopback 或 `--trusted-host`（官方还禁了 `0.0.0.0` 绑定，防止把远程执行代码暴露给网络）。Pocket 把入站请求的 `Host` / `Origin` 统一改写成 `127.0.0.1:<dsh端口>`，栅栏永远看到 loopback——**不需要改 dsh 的任何配置**。代理随插件自动启动，公网隧道按需开启（cloudflared 强制走 HTTP/2/TCP 443，绕开被网络屏蔽的 QUIC/UDP）。
 
 ## ⚠️ 安全（必读）
 
