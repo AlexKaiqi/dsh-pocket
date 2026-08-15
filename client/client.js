@@ -1406,9 +1406,18 @@ function PocketSettingsTab({ rpcCall }) {
     { style: styles.card },
     (0, import_react2.createElement)(
       "div",
-      null,
-      (0, import_react2.createElement)("strong", null, "\u{1F4F1} \u624B\u673A\u8BBF\u95EE | Phone access"),
-      (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
+      { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+      (0, import_react2.createElement)(
+        "div",
+        null,
+        (0, import_react2.createElement)("strong", null, "\u{1F4F1} \u624B\u673A\u8BBF\u95EE | Phone access"),
+        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
+      ),
+      (0, import_react2.createElement)(
+        "a",
+        { href: "https://github.com/shaobeichen/dsh-pocket/issues", target: "_blank", rel: "noreferrer", style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", textDecoration: "none", whiteSpace: "nowrap" } },
+        "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668 | by \u5C11\u5317\u6668"
+      )
     ),
     // 更新提示
     updateInfo ? (0, import_react2.createElement)(

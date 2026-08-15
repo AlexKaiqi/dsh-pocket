@@ -18,12 +18,15 @@
 
 ## What is this
 
-`dsh web` only allows local access by default (`127.0.0.1:3080`). DSH Pocket puts a **header-rewriting proxy** in front of it and hands you QR codes right in the DSH web settings page:
+**You want to use DeepSeek Harness on your computer, even when you're not at the computer.**
 
-```
-Phone ──scan──> dsh-pocket proxy ──> dsh web :3080
-                 (rewrites Host/Origin to loopback; passes DSH's trust fence)
-```
+- On your way home, the agent is running a task on your computer — pull out your phone and see where it is, what it produced.
+- Out and about, you want the agent on your computer to look something up or write a snippet — no remote desktop, no SSH.
+- The computer is at home or in the office, you're elsewhere, and you want to **drive your DeepSeek Harness from your phone** — send tasks, watch the output, tap approvals.
+
+That's what DSH Pocket does: **install it, scan a QR code, and your phone shows and controls the DeepSeek Harness UI in real time — from anywhere.**
+
+> One-liner: `dsh web` only allows local access by default; DSH Pocket puts a proxy in front of it that safely bridges your phone (see [How it works](#-how-it-works)).
 
 ## ✨ Features
 
@@ -38,6 +41,12 @@ Phone ──scan──> dsh-pocket proxy ──> dsh web :3080
 | 🔔 Web Push | Phone notifications when a task finishes or fails (even with the page closed); requires the HTTPS public tunnel or localhost |
 
 ## 🚀 Usage
+
+**Where the entry is**: after installing and restarting `dsh web`, open **Settings** — the left sidebar shows **"Phone access"** at the top level (same level as General / Models):
+
+<p align="center">
+  <img src="docs/entry.jpg" alt="Phone access entry" width="70%">
+</p>
 
 **Prerequisite**: [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) installed. If your terminal says `dsh: command not found`, install it first:
 
@@ -139,3 +148,7 @@ npm test                # proxy rewrite / WS passthrough / tunnel / service / RP
 [GPL-2.0](LICENSE) — copyleft: free to use, modify, and redistribute, but **derivatives must stay GPL** and keep the copyright notice; commercial use included.
 
 > Note: the mobile-adaptation portion is ported from [dsh-web-mobile](https://github.com/mexiaosqwq/dsh-web-mobile) (MIT, GPL-compatible); its copyright notice stays in `client/mobile/LICENSE.dsh-web-mobile`.
+
+---
+
+**Questions? Feedback welcome**: bugs, ideas, or feature requests — open an issue at [GitHub Issues](https://github.com/shaobeichen/dsh-pocket/issues) 🙏

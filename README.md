@@ -18,12 +18,15 @@
 
 ## 这是什么
 
-`dsh web` 默认只允许本机访问（`127.0.0.1:3080`）。DSH Pocket 在它前面加一层**改头代理**，并直接在 **DSH 网页设置页**里给你二维码：
+**你不在电脑前，也想用电脑上的 DeepSeek Harness。**
 
-```
-手机 ──扫码──> dsh-pocket 代理 ──> dsh web :3080
-                （改写 Host/Origin 为 loopback，DSH 信任栅栏放行）
-```
+- 下班路上，agent 在电脑上跑任务，你想掏出手机看看它干到哪了、结果如何
+- 出门在外，突然想让电脑上的 agent 查点资料、写段代码，但没有远程桌面、没有 SSH
+- 电脑在宿舍/办公室，你人在外面，想随时"操控你的 DeepSeek Harness"——发任务、看输出、点审批
+
+DSH Pocket 就是干这个的：**装上它，手机扫个码，就能实时看到并操控电脑上的 DeepSeek Harness 界面**——人在外面也能用。
+
+> 原理一句话：`dsh web` 默认只允许本机访问，DSH Pocket 在它前面加一层代理，把手机访问安全地接入（详见[「原理」](#-原理)）。
 
 ## ✨ 特性
 
@@ -38,6 +41,12 @@
 | 🔔 Web Push 通知 | agent 跑完/出错 → 手机推送通知（即使没开页面）；需 HTTPS 公网路径或 localhost |
 
 ## 🚀 怎么用
+
+**入口在哪**：安装完成并重启 `dsh web` 后，打开 **设置**，左侧边栏就能看到 **「手机访问」** 入口（和「通用设置」「模型」同级）：
+
+<p align="center">
+  <img src="docs/entry.jpg" alt="手机访问入口" width="70%">
+</p>
 
 **前提**：电脑上已装好 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。如果终端提示 `dsh: command not found`（找不到 dsh 命令），先安装：
 
@@ -140,3 +149,7 @@ npm test                # 代理改写 / WS 透传 / 隧道 / 服务 / RPC（7 �
 [GPL-2.0](LICENSE) —— 自由软件许可：可自由使用、修改、分发，但**修改版必须同样以 GPL 开源**并保留版权声明；商用同样适用。
 
 > 说明：移动端适配部分移植自 [dsh-web-mobile](https://github.com/mexiaosqwq/dsh-web-mobile)（MIT 许可，兼容 GPL），其版权声明保留在 `client/mobile/LICENSE.dsh-web-mobile`。
+
+---
+
+**有问题？欢迎反馈**：遇到 Bug、有想法、想提需求，请到 [GitHub Issues](https://github.com/shaobeichen/dsh-pocket/issues) 告诉我们 🙏

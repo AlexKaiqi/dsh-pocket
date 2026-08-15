@@ -166,9 +166,13 @@ function PocketSettingsTab({ rpcCall }) {
   const tunnelStateStarted = tunnelState?.startedAt ?? null;
 
   return h('div', { style: styles.card },
-    h('div', null,
-      h('strong', null, '📱 手机访问 | Phone access'),
-      h('div', { style: styles.muted }, '手机扫码打开的就是电脑上的这个界面，实时同步 | the phone shows this exact screen, live'),
+    h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+      h('div', null,
+        h('strong', null, '📱 手机访问 | Phone access'),
+        h('div', { style: styles.muted }, '手机扫码打开的就是电脑上的这个界面，实时同步 | the phone shows this exact screen, live'),
+      ),
+      h('a', { href: 'https://github.com/shaobeichen/dsh-pocket/issues', target: '_blank', rel: 'noreferrer', style: { fontSize: 12, color: 'var(--dsw-alias-label-tertiary,#8b93a1)', textDecoration: 'none', whiteSpace: 'nowrap' } },
+        '开发者：程序员少北晨 | by 少北晨'),
     ),
 
     // 更新提示
