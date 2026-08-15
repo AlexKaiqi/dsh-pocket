@@ -28,6 +28,12 @@ That's what DSH Pocket does: **install it, scan a QR code, and your phone shows 
 
 > One-liner: `dsh web` only allows local access by default; DSH Pocket puts a proxy in front of it that safely bridges your phone (see [How it works](#-how-it-works)).
 
+What it looks like — the phone shows the exact same UI as your computer, live:
+
+<p align="center">
+  <img src="docs/interface.jpg" alt="DSH UI on the phone" width="100%">
+</p>
+
 ## ✨ Features
 
 | Feature | Description |
