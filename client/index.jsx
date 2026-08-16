@@ -38,6 +38,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
   const [restartNotice, setRestartNotice] = useState(false); // 重启后提示
   const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result, startedAt } | null
+  const [isDesktop, setIsDesktop] = useState(false); // DSH Desktop（Electron）环境：更新/重启由桌面版管理
   const [now, setNow] = useState(Date.now()); // 每秒 tick，驱动倒计时
 
   // 进行中操作的「已等待 X 秒」倒计时
@@ -58,6 +59,7 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
+      if (s.desktop) setIsDesktop(true);
       if (s.restartNotice) {
         // 新进程确认起来了：显示一次「已重启」，清掉旧的更新横幅（单状态，不并存），
         // 然后自动刷新页面加载新代码——不用用户手动刷新
@@ -85,7 +87,9 @@ function PocketSettingsTab({ rpcCall }) {
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
   // 两种情况显示横幅：① 有新版可更新；② 磁盘已更新但进程还是旧代码（重启生效）
   // cache: 'no-store' —— registry 响应带缓存头，浏览器会缓存旧版本号导致「小版本不提示」
+  // 桌面端（isDesktop）：更新/重启由 DSH Desktop 管理，这里不做版本检测、不显示更新横幅
   useEffect(() => {
+    if (isDesktop) return;
     let alive = true;
     (async () => {
       try {
@@ -102,7 +106,7 @@ function PocketSettingsTab({ rpcCall }) {
       } catch { /* 网络失败静默 */ }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [isDesktop]);
 
   // 重启宿主（更新生效必需：刷新页面不会重载服务端代码）
   const restartPocket = async () => {
@@ -176,8 +180,13 @@ function PocketSettingsTab({ rpcCall }) {
         '开发者：程序员少北晨'),
     ),
 
-    // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条
-    restartNotice ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-brand-primary,#4f6ef7)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
+    // 桌面端提示：更新/重启由 DSH Desktop 管理，本插件这两项功能已关闭（扫码同屏等照常）
+    isDesktop ? h('div', { style: { ...styles.block, padding: '8px 0 0' } },
+      h('div', { style: styles.muted }, '💻 DSH Desktop 环境：更新与重启由桌面版管理，此处已停用 | Running inside DSH Desktop: updates & restart are managed by the desktop app'),
+    ) : null,
+
+    // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条（桌面端不会触发本插件的自重启）
+    !isDesktop && restartNotice ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-brand-primary,#4f6ef7)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔄 已重启 | Restarted'),
         h('button', { style: styles.btn, onClick: () => setRestartNotice(false) }, '知道了 | OK'),
@@ -186,7 +195,8 @@ function PocketSettingsTab({ rpcCall }) {
     ) : null,
 
     // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存
-    updateInfo ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
+    // 桌面端不渲染（更新由 DSH Desktop 管理）
+    !isDesktop && updateInfo ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', { style: { fontWeight: 600, fontSize: 13 } },
           updateInfo.updated

@@ -452,3 +452,38 @@ test('tsinghuaBottleUrl：按平台/架构匹配清华 bottle（Windows 无匹�
     globalThis.fetch = origFetch;
   }
 });
+
+test('桌面端（desktop=true）：update/restart 关闭，status 带标志，正常功能不受影响', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  installPocketRpc({ connection: conn }, {
+    service,
+    desktop: true,
+    runUpdate: { currentVersion: () => '1.4.0', loadedVersion: () => '1.4.0', perform: async () => ({ ok: true }) },
+    restart: () => ({ helperPid: 1, logOut: '', logErr: '' }),
+    log: { error() {}, warn() {} },
+  });
+  await service.startProxy();
+
+  // status 带 desktop 标志
+  const s = await conn.handler(POCKET_ENDPOINTS.status, {});
+  assert.equal(s.ok, true);
+  assert.equal(s.value.desktop, true, 'status 标记桌面端');
+
+  // 更新被关闭
+  const u = await conn.handler(POCKET_ENDPOINTS.update, {});
+  assert.equal(u.ok, false, '桌面端更新不可用');
+  assert.match(u.error.message, /DSH Desktop/, '提示由桌面版管理');
+
+  // 重启被关闭
+  const r = await conn.handler(POCKET_ENDPOINTS.restart, {});
+  assert.equal(r.ok, false, '桌面端重启不可用');
+  assert.match(r.error.message, /DSH Desktop/, '提示由桌面版管理');
+
+  // 正常功能（隧道）不受影响
+  const t = await conn.handler(POCKET_ENDPOINTS.tunnelStart, {});
+  assert.equal(t.ok, true, '隧道功能照常');
+
+  await service.dispose();
+});

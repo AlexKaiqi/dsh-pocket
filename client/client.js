@@ -1300,6 +1300,7 @@ function PocketSettingsTab({ rpcCall }) {
   const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
   const [restartNotice, setRestartNotice] = (0, import_react2.useState)(false);
   const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
+  const [isDesktop, setIsDesktop] = (0, import_react2.useState)(false);
   const [now, setNow] = (0, import_react2.useState)(Date.now());
   (0, import_react2.useEffect)(() => {
     const t = setInterval(() => setNow(Date.now()), 1e3);
@@ -1316,6 +1317,7 @@ function PocketSettingsTab({ rpcCall }) {
       const s = await call(POCKET_ENDPOINTS.status, {});
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
+      if (s.desktop) setIsDesktop(true);
       if (s.restartNotice) {
         setRestartNotice(true);
         setUpdateInfo(null);
@@ -1344,6 +1346,7 @@ function PocketSettingsTab({ rpcCall }) {
     }
   }, []);
   (0, import_react2.useEffect)(() => {
+    if (isDesktop) return;
     let alive = true;
     (async () => {
       try {
@@ -1362,7 +1365,7 @@ function PocketSettingsTab({ rpcCall }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [isDesktop]);
   const restartPocket = async () => {
     setUpdateInfo((u) => ({ ...u, restarting: true, startedAt: Date.now() }));
     try {
@@ -1437,8 +1440,14 @@ function PocketSettingsTab({ rpcCall }) {
         "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"
       )
     ),
-    // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条
-    restartNotice ? (0, import_react2.createElement)(
+    // 桌面端提示：更新/重启由 DSH Desktop 管理，本插件这两项功能已关闭（扫码同屏等照常）
+    isDesktop ? (0, import_react2.createElement)(
+      "div",
+      { style: { ...styles.block, padding: "8px 0 0" } },
+      (0, import_react2.createElement)("div", { style: styles.muted }, "\u{1F4BB} DSH Desktop \u73AF\u5883\uFF1A\u66F4\u65B0\u4E0E\u91CD\u542F\u7531\u684C\u9762\u7248\u7BA1\u7406\uFF0C\u6B64\u5904\u5DF2\u505C\u7528 | Running inside DSH Desktop: updates & restart are managed by the desktop app")
+    ) : null,
+    // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条（桌面端不会触发本插件的自重启）
+    !isDesktop && restartNotice ? (0, import_react2.createElement)(
       "div",
       { style: { ...styles.block, borderLeft: "4px solid var(--dsw-alias-brand-primary,#4f6ef7)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
       (0, import_react2.createElement)(
@@ -1450,7 +1459,8 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, `\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1A${status?.killHint ?? `lsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`}`)
     ) : null,
     // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存
-    updateInfo ? (0, import_react2.createElement)(
+    // 桌面端不渲染（更新由 DSH Desktop 管理）
+    !isDesktop && updateInfo ? (0, import_react2.createElement)(
       "div",
       { style: { ...styles.block, borderLeft: "4px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8, background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: "10px 12px" } },
       (0, import_react2.createElement)(
