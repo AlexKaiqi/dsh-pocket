@@ -1348,7 +1348,7 @@ function PocketSettingsTab({ rpcCall }) {
   (0, import_react2.useEffect)(() => {
     if (isDesktop) return;
     let alive = true;
-    (async () => {
+    const check = async () => {
       try {
         const v = await call(POCKET_ENDPOINTS.version, {});
         const meta = await (await fetch("https://registry.npmjs.org/dsh-pocket/latest", { cache: "no-store" })).json();
@@ -1361,9 +1361,12 @@ function PocketSettingsTab({ rpcCall }) {
         }
       } catch {
       }
-    })();
+    };
+    check();
+    const t = setInterval(check, 5 * 60 * 1e3);
     return () => {
       alive = false;
+      clearInterval(t);
     };
   }, [isDesktop]);
   const restartPocket = async () => {

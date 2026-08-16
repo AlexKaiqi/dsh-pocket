@@ -87,11 +87,13 @@ function PocketSettingsTab({ rpcCall }) {
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
   // 两种情况显示横幅：① 有新版可更新；② 磁盘已更新但进程还是旧代码（重启生效）
   // cache: 'no-store' —— registry 响应带缓存头，浏览器会缓存旧版本号导致「小版本不提示」
+  // 周期重查（每 5 分钟）：npm registry 的 /latest 走 CDN 边缘缓存，刚发布后打开页面
+  // 可能拿到旧版本号——周期性重查让更新提示在缓存刷新后自动出现，不用重开页面。
   // 桌面端（isDesktop）：更新/重启由 DSH Desktop 管理，这里不做版本检测、不显示更新横幅
   useEffect(() => {
     if (isDesktop) return;
     let alive = true;
-    (async () => {
+    const check = async () => {
       try {
         const v = await call(POCKET_ENDPOINTS.version, {});
         const meta = await (await fetch('https://registry.npmjs.org/dsh-pocket/latest', { cache: 'no-store' })).json();
@@ -104,8 +106,10 @@ function PocketSettingsTab({ rpcCall }) {
           setUpdateInfo({ current: v.current, latest: v.current, updating: false, result: 'ok', updated: true });
         }
       } catch { /* 网络失败静默 */ }
-    })();
-    return () => { alive = false; };
+    };
+    check();
+    const t = setInterval(check, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(t); };
   }, [isDesktop]);
 
   // 重启宿主（更新生效必需：刷新页面不会重载服务端代码）
