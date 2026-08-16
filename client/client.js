@@ -3,6 +3,13 @@ window.__ModuleLoader__.load({
   factory: (require) => {
     var module = { exports: {} };
     var exports = module.exports;
+    // The DSH client module system provides react as a module, never as a
+    // global. esbuild keeps react external (see the build config above) and
+    // its classic JSX transform emits bare React.createElement calls for the
+    // mobile components (which import only named hooks, not React itself), so
+    // the bundle must bind React itself - otherwise every mobile component
+    // crashes at render time with "ReferenceError: React is not defined".
+    var React = require("react");
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -55,21 +62,7 @@ function compareVersions(a, b) {
   if (!aPre && !bPre) return 0;
   if (!aPre) return 1;
   if (!bPre) return -1;
-  const aParts = aPre.slice(1).split(".");
-  const bParts = bPre.slice(1).split(".");
-  const len = Math.max(aParts.length, bParts.length);
-  for (let i = 0; i < len; i++) {
-    const ax = aParts[i] ?? "";
-    const bx = bParts[i] ?? "";
-    if (ax === bx) continue;
-    const aNum = /^\d+$/.test(ax);
-    const bNum = /^\d+$/.test(bx);
-    if (aNum && bNum) return Number(ax) - Number(bx);
-    if (aNum) return 1;
-    if (bNum) return -1;
-    return ax < bx ? -1 : 1;
-  }
-  return 0;
+  return aPre < bPre ? -1 : aPre > bPre ? 1 : 0;
 }
 function redactStatus(s) {
   return {

@@ -29,6 +29,13 @@ const wrapped = `window.__ModuleLoader__.load({
   factory: (require) => {
     var module = { exports: {} };
     var exports = module.exports;
+    // The DSH client module system provides react as a module, never as a
+    // global. esbuild keeps react external (see the build config above) and
+    // its classic JSX transform emits bare React.createElement calls for the
+    // mobile components (which import only named hooks, not React itself), so
+    // the bundle must bind React itself - otherwise every mobile component
+    // crashes at render time with "ReferenceError: React is not defined".
+    var React = require("react");
 ${bundled}
     return module.exports;
   }
