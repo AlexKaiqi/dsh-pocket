@@ -1348,7 +1348,7 @@ function PocketSettingsTab({ rpcCall }) {
     (async () => {
       try {
         const v = await call(POCKET_ENDPOINTS.version, {});
-        const meta = await (await fetch("https://registry.npmjs.org/dsh-pocket/latest")).json();
+        const meta = await (await fetch("https://registry.npmjs.org/dsh-pocket/latest", { cache: "no-store" })).json();
         if (!alive) return;
         const latest = typeof meta?.version === "string" ? meta.version : null;
         if (latest && v.current && compareVersions(latest, v.current) > 0) {

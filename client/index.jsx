@@ -84,12 +84,13 @@ function PocketSettingsTab({ rpcCall }) {
 
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
   // 两种情况显示横幅：① 有新版可更新；② 磁盘已更新但进程还是旧代码（重启生效）
+  // cache: 'no-store' —— registry 响应带缓存头，浏览器会缓存旧版本号导致「小版本不提示」
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const v = await call(POCKET_ENDPOINTS.version, {});
-        const meta = await (await fetch('https://registry.npmjs.org/dsh-pocket/latest')).json();
+        const meta = await (await fetch('https://registry.npmjs.org/dsh-pocket/latest', { cache: 'no-store' })).json();
         if (!alive) return;
         const latest = typeof meta?.version === 'string' ? meta.version : null;
         if (latest && v.current && compareVersions(latest, v.current) > 0) {
