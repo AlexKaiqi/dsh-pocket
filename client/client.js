@@ -1436,8 +1436,13 @@ function PocketSettingsTab({ rpcCall }) {
       ),
       (0, import_react2.createElement)(
         "div",
-        { style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", whiteSpace: "nowrap" } },
-        "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"
+        { style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", whiteSpace: "nowrap", textAlign: "right" } },
+        (0, import_react2.createElement)("div", null, "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"),
+        (0, import_react2.createElement)(
+          "a",
+          { href: "https://github.com/shaobeichen/dsh-pocket", target: "_blank", rel: "noreferrer", style: { color: "var(--dsw-alias-brand-primary,#4f6ef7)", textDecoration: "none", fontSize: 12, lineHeight: 1.6 } },
+          "\u2B50 \u70B9\u4E2A Star \u652F\u6301\u4E00\u4E0B | Star on GitHub"
+        )
       )
     ),
     // 桌面端提示：更新/重启由 DSH Desktop 管理，本插件这两项功能已关闭（扫码同屏等照常）
