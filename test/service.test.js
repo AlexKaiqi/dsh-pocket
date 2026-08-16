@@ -372,18 +372,41 @@ test('killHint：按平台返回停止命令（Windows 无 lsof）', async () =>
   assert.ok(!hint.includes('undefined'), '端口正确插入');
 });
 
-test('tsinghuaBottleUrl：按平台/架构匹配清华 bottle（Windows 无匹配）', async () => {
+test('tsinghuaBottleUrl：按平台/架构匹配清华 bottle（Windows 无匹配；mock 目录，不依赖外网）', async () => {
   const { tsinghuaBottleUrl } = await import('../lib/tunnel.mjs');
-  // Windows：无 Homebrew bottle → null
-  assert.equal(await tsinghuaBottleUrl({ os: 'windows', a: 'amd64' }), null, 'Windows 不走清华');
-  // macOS arm64 → 清华 arm64_ 开头的 bottle URL
-  const macUrl = await tsinghuaBottleUrl({ os: 'darwin', a: 'arm64' });
-  assert.ok(macUrl && macUrl.includes('mirrors.tuna.tsinghua.edu.cn'), 'macOS 有清华 URL: ' + macUrl);
-  assert.ok(/arm64_(sequoia|sonoma|tahoe|ventura|monterey)\.bottle\.tar\.gz$/.test(macUrl), '匹配 arm64 macOS bottle: ' + macUrl);
-  // macOS Intel → 无 arm64 前缀的 bottle
-  const intelUrl = await tsinghuaBottleUrl({ os: 'darwin', a: 'amd64' });
-  assert.ok(intelUrl && !/arm64_/.test(intelUrl), 'Intel 用无前缀 bottle: ' + intelUrl);
-  // Linux
-  const linuxUrl = await tsinghuaBottleUrl({ os: 'linux', a: 'arm64' });
-  assert.ok(linuxUrl && linuxUrl.includes('arm64_linux'), 'Linux arm64: ' + linuxUrl);
+  const origFetch = globalThis.fetch;
+  // mock 清华目录页（CI 在境外，真实访问清华会超时导致测试抖动）
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('mirrors.tuna.tsinghua.edu.cn')) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => `
+          <a href="cloudflared-2026.8.2.arm64_sequoia.bottle.tar.gz">
+          <a href="cloudflared-2026.8.2.arm64_sonoma.bottle.tar.gz">
+          <a href="cloudflared-2026.8.2.arm64_tahoe.bottle.tar.gz">
+          <a href="cloudflared-2026.8.2.arm64_linux.bottle.tar.gz">
+          <a href="cloudflared-2026.8.2.sonoma.bottle.tar.gz">
+          <a href="cloudflared-2026.8.2.x86_64_linux.bottle.tar.gz">
+        `,
+      };
+    }
+    return origFetch(url);
+  };
+  try {
+    // Windows：无 Homebrew bottle → null
+    assert.equal(await tsinghuaBottleUrl({ os: 'windows', a: 'amd64' }), null, 'Windows 不走清华');
+    // macOS arm64 → 清华 arm64_ 开头的 bottle URL
+    const macUrl = await tsinghuaBottleUrl({ os: 'darwin', a: 'arm64' });
+    assert.ok(macUrl && macUrl.includes('mirrors.tuna.tsinghua.edu.cn'), 'macOS 有清华 URL: ' + macUrl);
+    assert.ok(/arm64_(sequoia|sonoma|tahoe)\.bottle\.tar\.gz$/.test(macUrl), '匹配 arm64 macOS bottle: ' + macUrl);
+    // macOS Intel → 无 arm64 前缀的 bottle
+    const intelUrl = await tsinghuaBottleUrl({ os: 'darwin', a: 'amd64' });
+    assert.ok(intelUrl && !/arm64_/.test(intelUrl), 'Intel 用无前缀 bottle: ' + intelUrl);
+    // Linux
+    const linuxUrl = await tsinghuaBottleUrl({ os: 'linux', a: 'arm64' });
+    assert.ok(linuxUrl && linuxUrl.includes('arm64_linux'), 'Linux arm64: ' + linuxUrl);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });
