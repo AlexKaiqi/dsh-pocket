@@ -19,13 +19,29 @@ export function compareVersions(a, b) {
     const y = parseInt(pb[i], 10) || 0;
     if (x !== y) return x - y;
   }
-  // 数字段相等：无预发布后缀的更新；都有后缀时按后缀字典序（alpha < beta < rc…）
+  // 数字段相等：无预发布后缀的更新；都有后缀时按段比较（alpha < beta < rc…，
+  // 数字段按数值：rc.9 < rc.10）
   const aPre = String(a).replace(/^[vV]/, '').match(/-.*$/)?.[0] ?? '';
   const bPre = String(b).replace(/^[vV]/, '').match(/-.*$/)?.[0] ?? '';
   if (!aPre && !bPre) return 0;
   if (!aPre) return 1;
   if (!bPre) return -1;
-  return aPre < bPre ? -1 : aPre > bPre ? 1 : 0;
+  // 逐段比较：数字段按数值、文本段按字典序
+  const aParts = aPre.slice(1).split('.');
+  const bParts = bPre.slice(1).split('.');
+  const len = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < len; i++) {
+    const ax = aParts[i] ?? '';
+    const bx = bParts[i] ?? '';
+    if (ax === bx) continue;
+    const aNum = /^\d+$/.test(ax);
+    const bNum = /^\d+$/.test(bx);
+    if (aNum && bNum) return Number(ax) - Number(bx); // 数值比较
+    if (aNum) return 1; // 数字段 > 文本段
+    if (bNum) return -1;
+    return ax < bx ? -1 : 1; // 字典序
+  }
+  return 0;
 }
 
 /** 浏览器可见的状态字段（无敏感信息；含二维码 data URL）。 */

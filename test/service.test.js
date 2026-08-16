@@ -170,6 +170,15 @@ test('自重启：restartHost 用 detached 辅助进程交接，旧进程随后�
   assert.ok(calls.some((c) => typeof c === 'string' && c.startsWith('kill:')), '短暂等待后旧进程退出');
 });
 
+test('dshPortFromArgs：--port / -p / --port= 三种形式', async () => {
+  const { dshPortFromArgs } = await import('../lib/restart.js');
+  assert.equal(dshPortFromArgs(['web']), 3080, '默认 3080');
+  assert.equal(dshPortFromArgs(['web', '--port', '3099']), 3099);
+  assert.equal(dshPortFromArgs(['web', '-p', '3100']), 3100);
+  assert.equal(dshPortFromArgs(['web', '--port=3111']), 3111, '--port= 形式');
+  assert.equal(dshPortFromArgs(['web', '--port', 'abc']), 3080, '非法值回退默认');
+});
+
 test('自重启失败：spawn 抛错 → 返回 helperPid:null 和错误', async () => {
   const { restartHost } = await import('../lib/restart.js');
   const result = restartHost({
@@ -315,4 +324,39 @@ test('compareVersions：语义化版本比较', async () => {
   assert.ok(compareVersions('1.0.4-alpha', '1.0.4-beta') < 0, '预发布后缀按字典序');
   assert.ok(compareVersions('1.0.4-beta.2', '1.0.4-beta.1') > 0, '预发布后缀比较');
   assert.equal(compareVersions('V1.0.4', '1.0.4'), 0, '大写 V 也剥掉');
+  assert.ok(compareVersions('1.0.4-rc.10', '1.0.4-rc.9') > 0, '预发布数字段按数值（rc.10 > rc.9）');
+  assert.ok(compareVersions('1.0.4-rc.9', '1.0.4-rc.10') < 0, '反过来');
+  assert.ok(compareVersions('1.0.4-alpha.1', '1.0.4-alpha.10') < 0, 'alpha.1 < alpha.10（数值比较）');
+});
+
+test('stop 竞态：stop 打断 in-flight 后立即 start，不会并发 spawn cloudflared', async () => {
+  let spawnCount = 0;
+  let releaseA;
+  const gateA = new Promise((r) => { releaseA = r; });
+  const internals = {
+    ...stubInternals(),
+    startTunnel: async ({ signal }) => {
+      spawnCount += 1;
+      await gateA; // 挂起直到 releaseA
+      if (signal.aborted) throw new Error('cancelled');
+      return { url: 'https://a.trycloudflare.com', kill: () => {} };
+    },
+  };
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  await service.startProxy();
+
+  const pA = service.startTunnel().catch(() => null); // A in-flight
+  await new Promise((r) => setTimeout(r, 20));
+  service.stopTunnel(); // abort A、清 tunnelPromise
+  const pB = service.startTunnel().catch(() => null); // B 新起（gate 尚未释放，B 也挂起）
+  await new Promise((r) => setTimeout(r, 20));
+  releaseA(); // 释放 A：其 finally 不得清掉 B 的引用
+  await pA;
+  await new Promise((r) => setTimeout(r, 20));
+  await service.startTunnel().catch(() => null); // C：应复用 B 或等 B 完成，不再 spawn
+
+  assert.equal(spawnCount, 2, 'A、B 各 spawn 一次，C 不产生第三个 cloudflared');
+
+  service.stopTunnel();
+  await service.dispose();
 });

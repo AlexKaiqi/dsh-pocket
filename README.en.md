@@ -129,7 +129,7 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
 | `lib/service.mjs` | Service: proxy lifecycle, public tunnel, status snapshot (with QR data URLs) |
 | `lib/proxy.mjs` | Header-rewriting reverse proxy: Host/Origin → loopback, HTTP + WebSocket passthrough + polyfill injection |
 | `lib/tunnel.mjs` | cloudflared quick tunnel: download/extract/start/parse public URL (HTTP/2) |
-| `lib/web-rpc.js` | Loopback RPC: `pocket.status` / `tunnel.start` / `tunnel.stop` |
+| `lib/web-rpc.js` | Loopback RPC: `status` / `tunnel.start` / `tunnel.stop` / `version` / `update` / `restart` |
 | `client/` | "Phone access" settings tab + mobile adaptation (dsh-web-mobile port) |
 | `bin/dsh-pocket.mjs` | CLI: LAN/public modes, prints URL + QR |
 

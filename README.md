@@ -130,7 +130,7 @@ npx @deepseek-ai/dsh web
 | `lib/service.mjs` | 服务：代理生命周期、公网隧道、状态快照（含二维码 data URL） |
 | `lib/proxy.mjs` | 改头反向代理：Host/Origin → loopback，HTTP + WebSocket 全透传 + polyfill 注入 |
 | `lib/tunnel.mjs` | cloudflared 快速隧道：下载/解压/启动/解析公网 URL（HTTP/2） |
-| `lib/web-rpc.js` | loopback RPC：`pocket.status` / `tunnel.start` / `tunnel.stop` |
+| `lib/web-rpc.js` | loopback RPC：`status` / `tunnel.start` / `tunnel.stop` / `version` / `update` / `restart` |
 | `client/` | 设置页「手机访问」+ 移动端适配（dsh-web-mobile 移植） |
 | `bin/dsh-pocket.mjs` | CLI：局域网/公网模式，打印 URL + 二维码 |
 

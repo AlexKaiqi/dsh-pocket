@@ -178,3 +178,54 @@ test('压缩 HTML（gzip）不注入 polyfill——防止损坏压缩流', async
     await new Promise((r) => up.close(r));
   }
 });
+
+test('活动 WS 连接存在时 close 不挂起（closeAllConnections）', async () => {
+  const up = await fakeUpstream();
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.port } });
+  const ws = new WebSocket(`ws://127.0.0.1:${proxy.port}/api/events.host`);
+  await new Promise((res, rej) => { ws.on('open', res); ws.on('error', rej); });
+  try {
+    // 保持 WS 连接打开直接 close 代理——必须在 3s 内完成（server.close 本身会等连接，会挂）
+    await Promise.race([
+      proxy.close(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('proxy.close hung on active WS')), 3000)),
+    ]);
+  } finally {
+    ws.close();
+    await new Promise((r) => up.server.close(r));
+  }
+});
+
+test('WS upgrade 遇非 101 响应：客户端拿到状态行，不悬挂', async () => {
+  const up = createServer((req, res) => {
+    res.writeHead(403, { 'content-type': 'text/plain' });
+    res.end('forbidden');
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
+  try {
+    const got403 = await new Promise((resolve, reject) => {
+      const sock = connect(proxy.port, '127.0.0.1', () => {
+        sock.write(
+          `GET /api/events.host HTTP/1.1\r\nHost: x:3081\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n` +
+          `Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n`,
+        );
+      });
+      let buf = '';
+      const timer = setTimeout(() => { sock.destroy(); reject(new Error('hang: upgrade 客户端没收到任何字节')); }, 3000);
+      sock.on('data', (c) => {
+        buf += c.toString('latin1');
+        if (buf.includes('403')) {
+          clearTimeout(timer);
+          sock.destroy();
+          resolve(true);
+        }
+      });
+      sock.on('error', reject);
+    });
+    assert.equal(got403, true, '客户端收到 403 状态行而不是永久挂起');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.close(r));
+  }
+});
