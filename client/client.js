@@ -1438,10 +1438,11 @@ function PocketSettingsTab({ rpcCall }) {
         "div",
         { style: { fontSize: 12, color: "var(--dsw-alias-label-tertiary,#8b93a1)", textAlign: "right" } },
         (0, import_react2.createElement)("div", { style: { whiteSpace: "nowrap" } }, "\u5F00\u53D1\u8005\uFF1A\u7A0B\u5E8F\u5458\u5C11\u5317\u6668"),
+        (0, import_react2.createElement)("div", { style: { whiteSpace: "nowrap" } }, "\u2B50 \u987A\u624B\u7559\u9897 Star\uFF0C\u4F5C\u8005\u80FD\u9AD8\u5174\u4E00\u6574\u5929"),
         (0, import_react2.createElement)(
           "a",
           { href: "https://github.com/shaobeichen/dsh-pocket", target: "_blank", rel: "noreferrer", style: { color: "var(--dsw-alias-brand-primary,#4f6ef7)", fontSize: 12, lineHeight: 1.6, textDecoration: "underline" } },
-          "\u2B50 \u8FD9\u4E2A\u63D2\u4EF6\u4E0D\u6536\u94B1\uFF0C\u987A\u624B\u7559\u9897 Star\uFF0C\u4F5C\u8005\u80FD\u9AD8\u5174\u4E00\u6574\u5929 | Free plugin \u2014 a Star would make the author's day"
+          "\u884C\uFF0C\u7ED9\u4F60\u4E00\u9897 Star"
         )
       )
     ),
