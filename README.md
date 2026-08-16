@@ -122,7 +122,10 @@ npx @deepseek-ai/dsh web
 
 **其他可能**：企业防火墙/校园网拦截出站；此时请让 IT 放行或改用热点。
 
-**首次开启时「下载 cloudflared」失败/卡住**：cloudflared 从 GitHub 发布页下载（约 20MB），国内直连经常失败。插件会自动依次尝试多个 GitHub 加速镜像；全部失败时设置页会给出提示。备选方案（任选其一）：
+**首次开启时「下载 cloudflared」失败/卡住**：
+- **macOS/Linux**：优先走**清华镜像**（实测 ~3MB/s，几秒下完）；失败自动回退官方 GitHub + 加速源。
+- **Windows**：无清华镜像（Homebrew 不支持 Windows），走官方直连下载（约 50MB，**单线程会慢，属正常**，耐心等几分钟；也可挂代理加速）。
+- 全部失败时设置页会给出提示。备选方案（任选其一）：
 1. 手动装好命令行 cloudflared 后重试（装好后 dsh-pocket 直接用 PATH 里的，不再下载）：
    - macOS：`brew install cloudflared`；Linux：`sudo apt install cloudflared` 或官网下载
    - Windows：`winget install cloudflared` 或官网下载

@@ -121,7 +121,10 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
 
 **Other causes**: corporate firewalls / campus networks blocking outbound — ask IT to allow it, or use a hotspot.
 
-**First run: "Downloading cloudflared" fails or hangs**: cloudflared (~20MB) downloads from GitHub releases, which is often unreachable from mainland China. The plugin tries several GitHub acceleration mirrors in order; if all fail, the settings page shows a hint. Alternatives (any one):
+**First run: "Downloading cloudflared" fails or hangs**:
+- **macOS/Linux**: the plugin first downloads from the **Tsinghua mirror** (measured ~3MB/s, done in seconds); falls back to official GitHub + acceleration mirrors if it fails.
+- **Windows**: no Tsinghua mirror (Homebrew doesn't support Windows) — downloads the ~50MB exe from GitHub directly; **single-threaded, so it's slower — that's expected**, wait a few minutes, or use a proxy.
+- If all sources fail, the settings page shows a hint. Alternatives (any one):
 1. Install the `cloudflared` command and retry (the plugin then uses the PATH binary, no download):
    - macOS: `brew install cloudflared`; Linux: `sudo apt install cloudflared` or from the official site
    - Windows: `winget install cloudflared` or from the official site
