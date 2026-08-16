@@ -487,3 +487,27 @@ test('桌面端（desktop=true）：update/restart 关闭，status 带标志，�
 
   await service.dispose();
 });
+
+test('startProxy：端口被占（EADDRINUSE）时自动尝试下一个端口', async () => {
+  let attempts = 0;
+  const internals = {
+    ...stubInternals(),
+    createProxy: async ({ port: p }) => {
+      attempts += 1;
+      if (attempts === 1) {
+        const e = new Error('address in use');
+        e.code = 'EADDRINUSE';
+        throw e;
+      }
+      return { port: p, close: async () => {} };
+    },
+  };
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const proxy = await service.startProxy();
+  assert.equal(attempts, 2, '第一个端口失败后重试');
+  assert.equal(proxy.port, 3082, '自动换到下一个端口');
+  const st = await service.status();
+  assert.equal(st.proxyRunning, true);
+  assert.ok(st.lanUrl.includes(':3082'), 'URL 使用实际端口');
+  await service.dispose();
+});

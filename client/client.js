@@ -1459,12 +1459,7 @@ function PocketSettingsTab({ rpcCall }) {
         )
       )
     ),
-    // 桌面端提示：更新/重启由 DSH Desktop 管理，本插件这两项功能已关闭（扫码同屏等照常）
-    isDesktop ? (0, import_react2.createElement)(
-      "div",
-      { style: { ...styles.block, padding: "8px 0 0" } },
-      (0, import_react2.createElement)("div", { style: styles.muted }, "\u{1F4BB} DSH Desktop \u73AF\u5883\uFF1A\u66F4\u65B0\u4E0E\u91CD\u542F\u7531\u684C\u9762\u7248\u7BA1\u7406\uFF0C\u6B64\u5904\u5DF2\u505C\u7528 | Running inside DSH Desktop: updates & restart are managed by the desktop app")
-    ) : null,
+    // 桌面端不显示更新/重启横幅（更新由 DSH Desktop 管理），也不需要额外提示
     // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条（桌面端不会触发本插件的自重启）
     !isDesktop && restartNotice ? (0, import_react2.createElement)(
       "div",

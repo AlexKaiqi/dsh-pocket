@@ -188,10 +188,7 @@ function PocketSettingsTab({ rpcCall }) {
       ),
     ),
 
-    // 桌面端提示：更新/重启由 DSH Desktop 管理，本插件这两项功能已关闭（扫码同屏等照常）
-    isDesktop ? h('div', { style: { ...styles.block, padding: '8px 0 0' } },
-      h('div', { style: styles.muted }, '💻 DSH Desktop 环境：更新与重启由桌面版管理，此处已停用 | Running inside DSH Desktop: updates & restart are managed by the desktop app'),
-    ) : null,
+    // 桌面端不显示更新/重启横幅（更新由 DSH Desktop 管理），也不需要额外提示
 
     // 重启后提示（进程在后台运行，停止方法）——左侧蓝色色条（桌面端不会触发本插件的自重启）
     !isDesktop && restartNotice ? h('div', { style: { ...styles.block, borderLeft: '4px solid var(--dsw-alias-brand-primary,#4f6ef7)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: '10px 12px' } },
