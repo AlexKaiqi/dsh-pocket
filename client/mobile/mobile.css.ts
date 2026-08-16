@@ -175,6 +175,16 @@ export const MOBILE_CSS = `
     padding-top: env(safe-area-inset-top, 0px) !important;
   }
 
+  /* 主内容列（第 2 个网格子元素）在官方样式里有显式 grid-column: 2——
+     网格被压缩成 [1fr, 0, 0] 后它会落在 0px 的第 2 轨，整个主界面被挤出
+     视口（只剩背景图）。必须显式把它拉回第 1 轨（issue #5）。
+     第 3 列（details）保持 0 轨即可，无需处理。 */
+  [data-mobile-nav="frame"] > :nth-child(2) {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+  }
+
   /* The sidebar column (first grid child) becomes a left drawer. The drawer
      hugs the sidebar content exactly (the wide sidebar carries an inline
      width, ~280px): a fixed 92vw box would leave a white strip where the
