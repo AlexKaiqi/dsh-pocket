@@ -15,15 +15,20 @@ import { mobileApply } from './mobile/mobile-apply.tsx';
 const name = 'dsh-pocket';
 const inject = ['slots', 'connection', 'layout', 'locale', 'sessionLogDownload'];
 
+// 官方 DeepSeek Harness 设计系统（dsh-client-ui-theme design-platform.css）：
+// 按钮 md=36px 胶囊形 / sm=28px；品牌色 --dsw-alias-brand-primary；
+// hover 走 --dsw-alias-button-*-hover；间距 4px 栅格；正文 13px。
 const styles = {
-  card: { background: 'var(--dsw-alias-bg-layer-1,#fff)', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', borderRadius: 12, padding: '14px 16px', maxWidth: 480 },
-  block: { borderTop: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', marginTop: 12, paddingTop: 12 },
-  muted: { color: 'var(--dsw-alias-label-tertiary,#8b93a1)', fontSize: 12 },
-  code: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: 12, wordBreak: 'break-all', margin: '4px 0 8px' },
-  primary: { font: 'inherit', cursor: 'pointer', border: 'none', background: 'var(--dsw-alias-brand-primary,#4f6ef7)', color: '#fff', borderRadius: 8, padding: '6px 14px', fontSize: 13 },
-  btn: { font: 'inherit', cursor: 'pointer', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 8, padding: '6px 14px', fontSize: 13 },
-  qr: { width: 220, height: 220, borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', margin: '6px 0' },
-  warn: { color: 'var(--dsw-alias-state-warn-primary,#b45309)', fontSize: 12 },
+  card: { background: 'var(--dsw-alias-bg-layer-1,#fff)', border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', borderRadius: 12, padding: '16px 20px', maxWidth: 480 },
+  block: { borderTop: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', marginTop: 16, paddingTop: 16 },
+  muted: { color: 'var(--dsw-alias-label-tertiary,#8b93a1)', fontSize: 12, lineHeight: 1.5 },
+  code: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: 12, wordBreak: 'break-all', margin: '6px 0 10px', color: 'var(--dsw-alias-label-primary,inherit)' },
+  // 主按钮：官方 md 胶囊形（36px）
+  primary: { font: 'inherit', cursor: 'pointer', border: 'none', background: 'var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))', color: '#fff', height: 36, padding: '0 16px', borderRadius: 999, fontSize: 13, fontWeight: 500, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  // 次级按钮：官方 outline/ghost 胶囊形
+  btn: { font: 'inherit', cursor: 'pointer', border: '1px solid var(--dsw-alias-button-ghost-active-border, var(--dsw-alias-border-l2,#d1d5db))', background: 'var(--dsw-alias-bg-layer-1,#fff)', color: 'var(--dsw-alias-label-primary,inherit)', height: 36, padding: '0 16px', borderRadius: 999, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  qr: { width: 220, height: 220, borderRadius: 10, border: '1px solid var(--dsw-alias-border-l2,#e5e7eb)', margin: '8px 0' },
+  warn: { color: 'var(--dsw-alias-state-warn-primary,#b45309)', fontSize: 12, lineHeight: 1.5 },
 };
 
 function PocketSettingsTab({ rpcCall }) {
@@ -32,7 +37,15 @@ function PocketSettingsTab({ rpcCall }) {
   const [error, setError] = useState(null);
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
   const [restartNotice, setRestartNotice] = useState(false); // 重启后提示
-  const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result } | null
+  const [updateInfo, setUpdateInfo] = useState(null); // { current, latest, updating, result, startedAt } | null
+  const [now, setNow] = useState(Date.now()); // 每秒 tick，驱动倒计时
+
+  // 进行中操作的「已等待 X 秒」倒计时
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = (startedAt) => (startedAt ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) : 0);
 
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
@@ -92,7 +105,7 @@ function PocketSettingsTab({ rpcCall }) {
 
   // 重启宿主（更新生效必需：刷新页面不会重载服务端代码）
   const restartPocket = async () => {
-    setUpdateInfo((u) => ({ ...u, restarting: true }));
+    setUpdateInfo((u) => ({ ...u, restarting: true, startedAt: Date.now() }));
     try {
       // 宿主 500ms 后自杀，RPC 响应可能来不及送达 → 3 秒超时兜底，别让按钮永远卡「重启中…」
       await Promise.race([
@@ -113,7 +126,7 @@ function PocketSettingsTab({ rpcCall }) {
 
   // 一键更新：调宿主 dsh plugin update（成功后宿主自动重启生效，用户只点一次）
   const runUpdate = async () => {
-    setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
+    setUpdateInfo((u) => ({ ...u, updating: true, result: null, startedAt: Date.now() }));
     try {
       const r = await call(POCKET_ENDPOINTS.update, {});
       setUpdateInfo((u) => ({
@@ -187,7 +200,11 @@ function PocketSettingsTab({ rpcCall }) {
             : h('button', { style: styles.primary, onClick: restartPocket, disabled: updateInfo.restarting }, updateInfo.restarting ? '重启中…' : '🔄 重启 dsh web 生效 | Restart now'),
       ),
       h('div', { style: styles.muted, marginTop: 4 },
-        updateInfo.result === 'ok'
+        updateInfo.updating
+          ? `⏳ 更新中（通常 1-2 分钟）· 已等待 ${elapsed(updateInfo.startedAt)} 秒 | updating (usually 1-2 min) · ${elapsed(updateInfo.startedAt)}s`
+        : updateInfo.restarting
+          ? `⏳ 正在重启生效（通常 10-30 秒）· 已等待 ${elapsed(updateInfo.startedAt)} 秒 | restarting (usually 10-30s) · ${elapsed(updateInfo.startedAt)}s`
+        : updateInfo.result === 'ok'
           ? (updateInfo.autoRestart ? '✅ 已更新，正在自动重启生效，请稍候刷新 | updated — restarting automatically, refresh shortly'
             : '✅ 已更新，重启 dsh web 生效 | updated — restart dsh web')
         : updateInfo.result === 'fail' ? `❌ 失败：${updateInfo.output || '未知'}（手动更新：dsh plugin --profile web update dsh-pocket --latest -w）`
@@ -221,7 +238,9 @@ function PocketSettingsTab({ rpcCall }) {
           h('button', { style: styles.primary, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? '开启中…' : '开启公网访问 | Enable anywhere'),
           tunnelStarting
             ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } },
-              `⏳ ${tunnelStateDetail}（已等待 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1000)} 秒）…`)
+              tunnelPhase === 'downloading'
+                ? `⏳ 下载 cloudflared（首次约 20-50MB，通常 1-2 分钟；之后秒开）· 已等待 ${elapsed(tunnelStateStarted)} 秒`
+                : `⏳ 连接 Cloudflare 边缘（通常 5-30 秒）· 已等待 ${elapsed(tunnelStateStarted)} 秒${elapsed(tunnelStateStarted) > 30 ? ' — 有点久？检查是否开着代理/VPN（Clash TUN 等）' : ''}`)
             : tunnelPhase === 'error'
               ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-state-error-primary,#dc2626)' } },
                 `❌ 开启失败：${tunnelStateDetail || '未知错误 | failed'}（可重试；若是代理/VPN 问题见 README 排障）`)

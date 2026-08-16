@@ -1282,14 +1282,16 @@ function mobileApply(ctx) {
 var name = "dsh-pocket";
 var inject = ["slots", "connection", "layout", "locale", "sessionLogDownload"];
 var styles = {
-  card: { background: "var(--dsw-alias-bg-layer-1,#fff)", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", borderRadius: 12, padding: "14px 16px", maxWidth: 480 },
-  block: { borderTop: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", marginTop: 12, paddingTop: 12 },
-  muted: { color: "var(--dsw-alias-label-tertiary,#8b93a1)", fontSize: 12 },
-  code: { fontFamily: "ui-monospace,Menlo,monospace", fontSize: 12, wordBreak: "break-all", margin: "4px 0 8px" },
-  primary: { font: "inherit", cursor: "pointer", border: "none", background: "var(--dsw-alias-brand-primary,#4f6ef7)", color: "#fff", borderRadius: 8, padding: "6px 14px", fontSize: 13 },
-  btn: { font: "inherit", cursor: "pointer", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", background: "var(--dsw-alias-bg-layer-1,#fff)", borderRadius: 8, padding: "6px 14px", fontSize: 13 },
-  qr: { width: 220, height: 220, borderRadius: 8, border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", margin: "6px 0" },
-  warn: { color: "var(--dsw-alias-state-warn-primary,#b45309)", fontSize: 12 }
+  card: { background: "var(--dsw-alias-bg-layer-1,#fff)", border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", borderRadius: 12, padding: "16px 20px", maxWidth: 480 },
+  block: { borderTop: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", marginTop: 16, paddingTop: 16 },
+  muted: { color: "var(--dsw-alias-label-tertiary,#8b93a1)", fontSize: 12, lineHeight: 1.5 },
+  code: { fontFamily: "ui-monospace,Menlo,monospace", fontSize: 12, wordBreak: "break-all", margin: "6px 0 10px", color: "var(--dsw-alias-label-primary,inherit)" },
+  // 主按钮：官方 md 胶囊形（36px）
+  primary: { font: "inherit", cursor: "pointer", border: "none", background: "var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))", color: "#fff", height: 36, padding: "0 16px", borderRadius: 999, fontSize: 13, fontWeight: 500, display: "inline-flex", alignItems: "center", justifyContent: "center" },
+  // 次级按钮：官方 outline/ghost 胶囊形
+  btn: { font: "inherit", cursor: "pointer", border: "1px solid var(--dsw-alias-button-ghost-active-border, var(--dsw-alias-border-l2,#d1d5db))", background: "var(--dsw-alias-bg-layer-1,#fff)", color: "var(--dsw-alias-label-primary,inherit)", height: 36, padding: "0 16px", borderRadius: 999, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center" },
+  qr: { width: 220, height: 220, borderRadius: 10, border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", margin: "8px 0" },
+  warn: { color: "var(--dsw-alias-state-warn-primary,#b45309)", fontSize: 12, lineHeight: 1.5 }
 };
 function PocketSettingsTab({ rpcCall }) {
   const [status, setStatus] = (0, import_react2.useState)(null);
@@ -1298,6 +1300,12 @@ function PocketSettingsTab({ rpcCall }) {
   const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
   const [restartNotice, setRestartNotice] = (0, import_react2.useState)(false);
   const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
+  const [now, setNow] = (0, import_react2.useState)(Date.now());
+  (0, import_react2.useEffect)(() => {
+    const t = setInterval(() => setNow(Date.now()), 1e3);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = (startedAt) => startedAt ? Math.max(0, Math.floor((Date.now() - startedAt) / 1e3)) : 0;
   const call = async (endpoint, payload) => {
     const res = await rpcCall(endpoint, payload);
     if (!res?.ok) throw new Error(res?.error?.message ?? "RPC failed");
@@ -1356,7 +1364,7 @@ function PocketSettingsTab({ rpcCall }) {
     };
   }, []);
   const restartPocket = async () => {
-    setUpdateInfo((u) => ({ ...u, restarting: true }));
+    setUpdateInfo((u) => ({ ...u, restarting: true, startedAt: Date.now() }));
     try {
       await Promise.race([
         call(POCKET_ENDPOINTS.restart, {}),
@@ -1373,7 +1381,7 @@ function PocketSettingsTab({ rpcCall }) {
     }
   };
   const runUpdate = async () => {
-    setUpdateInfo((u) => ({ ...u, updating: true, result: null }));
+    setUpdateInfo((u) => ({ ...u, updating: true, result: null, startedAt: Date.now() }));
     try {
       const r = await call(POCKET_ENDPOINTS.update, {});
       setUpdateInfo((u) => ({
@@ -1458,7 +1466,7 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)(
         "div",
         { style: styles.muted, marginTop: 4 },
-        updateInfo.result === "ok" ? updateInfo.autoRestart ? "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u6B63\u5728\u81EA\u52A8\u91CD\u542F\u751F\u6548\uFF0C\u8BF7\u7A0D\u5019\u5237\u65B0 | updated \u2014 restarting automatically, refresh shortly" : "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u91CD\u542F dsh web \u751F\u6548 | updated \u2014 restart dsh web" : updateInfo.result === "fail" ? `\u274C \u5931\u8D25\uFF1A${updateInfo.output || "\u672A\u77E5"}\uFF08\u624B\u52A8\u66F4\u65B0\uFF1Adsh plugin --profile web update dsh-pocket --latest -w\uFF09` : `\u5F53\u524D v${updateInfo.current} \u2192 \u6700\u65B0 v${updateInfo.latest}`
+        updateInfo.updating ? `\u23F3 \u66F4\u65B0\u4E2D\uFF08\u901A\u5E38 1-2 \u5206\u949F\uFF09\xB7 \u5DF2\u7B49\u5F85 ${elapsed(updateInfo.startedAt)} \u79D2 | updating (usually 1-2 min) \xB7 ${elapsed(updateInfo.startedAt)}s` : updateInfo.restarting ? `\u23F3 \u6B63\u5728\u91CD\u542F\u751F\u6548\uFF08\u901A\u5E38 10-30 \u79D2\uFF09\xB7 \u5DF2\u7B49\u5F85 ${elapsed(updateInfo.startedAt)} \u79D2 | restarting (usually 10-30s) \xB7 ${elapsed(updateInfo.startedAt)}s` : updateInfo.result === "ok" ? updateInfo.autoRestart ? "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u6B63\u5728\u81EA\u52A8\u91CD\u542F\u751F\u6548\uFF0C\u8BF7\u7A0D\u5019\u5237\u65B0 | updated \u2014 restarting automatically, refresh shortly" : "\u2705 \u5DF2\u66F4\u65B0\uFF0C\u91CD\u542F dsh web \u751F\u6548 | updated \u2014 restart dsh web" : updateInfo.result === "fail" ? `\u274C \u5931\u8D25\uFF1A${updateInfo.output || "\u672A\u77E5"}\uFF08\u624B\u52A8\u66F4\u65B0\uFF1Adsh plugin --profile web update dsh-pocket --latest -w\uFF09` : `\u5F53\u524D v${updateInfo.current} \u2192 \u6700\u65B0 v${updateInfo.latest}`
       )
     ) : null,
     // 局域网
@@ -1494,7 +1502,7 @@ function PocketSettingsTab({ rpcCall }) {
         tunnelStarting ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } },
-          `\u23F3 ${tunnelStateDetail}\uFF08\u5DF2\u7B49\u5F85 ${Math.floor((Date.now() - (tunnelStateStarted || Date.now())) / 1e3)} \u79D2\uFF09\u2026`
+          tunnelPhase === "downloading" ? `\u23F3 \u4E0B\u8F7D cloudflared\uFF08\u9996\u6B21\u7EA6 20-50MB\uFF0C\u901A\u5E38 1-2 \u5206\u949F\uFF1B\u4E4B\u540E\u79D2\u5F00\uFF09\xB7 \u5DF2\u7B49\u5F85 ${elapsed(tunnelStateStarted)} \u79D2` : `\u23F3 \u8FDE\u63A5 Cloudflare \u8FB9\u7F18\uFF08\u901A\u5E38 5-30 \u79D2\uFF09\xB7 \u5DF2\u7B49\u5F85 ${elapsed(tunnelStateStarted)} \u79D2${elapsed(tunnelStateStarted) > 30 ? " \u2014 \u6709\u70B9\u4E45\uFF1F\u68C0\u67E5\u662F\u5426\u5F00\u7740\u4EE3\u7406/VPN\uFF08Clash TUN \u7B49\uFF09" : ""}`
         ) : tunnelPhase === "error" ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 8, fontSize: 12, color: "var(--dsw-alias-state-error-primary,#dc2626)" } },
