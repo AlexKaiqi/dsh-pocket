@@ -360,3 +360,14 @@ test('stop 竞态：stop 打断 in-flight 后立即 start，不会并发 spawn c
   service.stopTunnel();
   await service.dispose();
 });
+
+test('killHint：按平台返回停止命令（Windows 无 lsof）', async () => {
+  const { killHint } = await import('../lib/web-rpc.js');
+  const hint = killHint(3080);
+  if (process.platform === 'win32') {
+    assert.ok(hint.includes('netstat') && hint.includes('taskkill'), 'Windows 用 netstat/taskkill');
+  } else {
+    assert.ok(hint.includes('lsof -ti :3080'), 'macOS/Linux 用 lsof');
+  }
+  assert.ok(!hint.includes('undefined'), '端口正确插入');
+});

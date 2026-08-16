@@ -90,10 +90,10 @@ npx @deepseek-ai/dsh web
 | `dsh: command not found` / 提示 DSH 未定义 | dsh CLI 没装：`npm install -g @deepseek-ai/dsh`，或命令前加 `npx @deepseek-ai/dsh` |
 | `ERR_PNPM_ADDING_TO_ROOT` | pnpm 9 对 workspace 根的限制：安装/更新命令**末尾加 `-w`**（`--workspace-root`） |
 | 装完/更新了但界面没变化 | **必须重启 `dsh web`** 才生效；运行中的进程仍加载旧代码 |
-| `listen EADDRINUSE ... :3081` | 旧 dsh-pocket 进程还占着端口：`lsof -ti :3081 \| xargs kill -9` 后重试 |
+| `listen EADDRINUSE ... :3081` | 旧 dsh-pocket 进程还占着端口：macOS/Linux `lsof -ti :3081 \| xargs kill -9`；Windows `netstat -ano \| findstr :3081`（找 LISTENING 的 PID）→ `taskkill /PID <PID> /F`，后重试 |
 | 版本停在 0.x 升不上去 | `^0.x` 范围不允许升到 1.x：更新用 `--latest`（`dsh plugin --profile web update dsh-pocket --latest -w`） |
 | 公网 `error 1033` | 见下方「公网隧道常见问题」——多半是本机代理/VPN（Clash 等 TUN 模式）掐断了隧道 |
-| 点「重启 dsh web」后页面提示进程在后台运行 | 自重启的新进程是 detached 后台进程（不挂终端），是页内更新的标准做法；停止它：`lsof -ti :3080 \| xargs kill -9`（日志在 `$DSH_HOME` 下 `dsh-pocket-restart-*.log`） |
+| 点「重启 dsh web」后页面提示进程在后台运行 | 自重启的新进程是 detached 后台进程（不挂终端），是页内更新的标准做法；停止它：macOS/Linux `lsof -ti :3080 \| xargs kill -9`；Windows `netstat -ano \| findstr :3080` → `taskkill /PID <PID> /F`（日志在 `$DSH_HOME` 下 `dsh-pocket-restart-*.log`） |
 
 ## ⚠️ 公网隧道常见问题（必读）
 
@@ -121,6 +121,14 @@ npx @deepseek-ai/dsh web
    效果完全一样（人在外面也能用）
 
 **其他可能**：企业防火墙/校园网拦截出站；此时请让 IT 放行或改用热点。
+
+**首次开启时「下载 cloudflared」失败/卡住**：cloudflared 从 GitHub 发布页下载（约 20MB），国内直连经常失败。插件会自动依次尝试多个 GitHub 加速镜像；全部失败时设置页会给出提示。备选方案（任选其一）：
+1. 手动装好命令行 cloudflared 后重试（装好后 dsh-pocket 直接用 PATH 里的，不再下载）：
+   - macOS：`brew install cloudflared`；Linux：`sudo apt install cloudflared` 或官网下载
+   - Windows：`winget install cloudflared` 或官网下载
+   - 任何平台：`npm i -g cloudflared`
+2. 挂代理（系统代理/Clash 等）后重新点「开启公网访问」
+3. 手动下载二进制放到 `$DSH_HOME/dsh-pocket/bin/` 目录（`$DSH_HOME` 一般是 `~/.dsh`，Windows 是 `%USERPROFILE%\.dsh`）
 
 ## 🗂 架构（单包）
 

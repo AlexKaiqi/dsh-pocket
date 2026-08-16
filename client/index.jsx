@@ -168,7 +168,7 @@ function PocketSettingsTab({ rpcCall }) {
         h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🔄 已重启 | Restarted'),
         h('button', { style: styles.btn, onClick: () => setRestartNotice(false) }, '知道了 | OK'),
       ),
-      h('div', { style: styles.muted, marginTop: 4, wordBreak: 'break-all' }, `进程在后台运行（不挂终端）。如需停止：lsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`),
+      h('div', { style: styles.muted, marginTop: 4, wordBreak: 'break-all' }, `进程在后台运行（不挂终端）。如需停止：${status?.killHint ?? `lsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`}`),
     ) : null,
 
     // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存

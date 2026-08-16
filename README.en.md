@@ -90,10 +90,10 @@ On the same page click "**Enable anywhere**" → wait for the tunnel (first run 
 | `dsh: command not found` / "DSH is not defined" | dsh CLI missing: `npm install -g @deepseek-ai/dsh`, or prefix commands with `npx @deepseek-ai/dsh` |
 | `ERR_PNPM_ADDING_TO_ROOT` | pnpm 9 workspace-root restriction: append `-w` (`--workspace-root`) to install/update commands |
 | Nothing changed after install/update | **You must restart `dsh web`**; the running process still loads the old code |
-| `listen EADDRINUSE ... :3081` | A stale dsh-pocket process holds the port: `lsof -ti :3081 \| xargs kill -9`, then retry |
+| `listen EADDRINUSE ... :3081` | A stale dsh-pocket process holds the port: macOS/Linux `lsof -ti :3081 \| xargs kill -9`; Windows `netstat -ano \| findstr :3081` (find the LISTENING PID) → `taskkill /PID <PID> /F`, then retry |
 | Version stuck below 1.x | `^0.x` ranges never jump to 1.x: update with `--latest` (`dsh plugin --profile web update dsh-pocket --latest -w`) |
 | Public `error 1033` | See "Public tunnel troubleshooting" below — usually a local proxy/VPN (Clash etc. TUN mode) killing the tunnel |
-| After "Restart dsh web", the page says the process is running in the background | The new process from in-page self-restart is a detached background process (not attached to your terminal) — that's the standard way to apply updates in-page; stop it with `lsof -ti :3080 \| xargs kill -9` (logs under `$DSH_HOME` as `dsh-pocket-restart-*.log`) |
+| After "Restart dsh web", the page says the process is running in the background | The new process from in-page self-restart is a detached background process (not attached to your terminal) — that's the standard way to apply updates in-page; stop it: macOS/Linux `lsof -ti :3080 \| xargs kill -9`; Windows `netstat -ano \| findstr :3080` → `taskkill /PID <PID> /F` (logs under `$DSH_HOME` as `dsh-pocket-restart-*.log`) |
 
 ## ⚠️ Public tunnel troubleshooting (read first)
 
@@ -120,6 +120,14 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
 4. If the network really can't reach the tunnel, use **LAN mode**: turn on the phone hotspot → connect the computer to it → scan the LAN QR. Same experience, from anywhere.
 
 **Other causes**: corporate firewalls / campus networks blocking outbound — ask IT to allow it, or use a hotspot.
+
+**First run: "Downloading cloudflared" fails or hangs**: cloudflared (~20MB) downloads from GitHub releases, which is often unreachable from mainland China. The plugin tries several GitHub acceleration mirrors in order; if all fail, the settings page shows a hint. Alternatives (any one):
+1. Install the `cloudflared` command and retry (the plugin then uses the PATH binary, no download):
+   - macOS: `brew install cloudflared`; Linux: `sudo apt install cloudflared` or from the official site
+   - Windows: `winget install cloudflared` or from the official site
+   - Any platform: `npm i -g cloudflared`
+2. Enable a proxy (system proxy / Clash etc.) and click "Enable anywhere" again
+3. Manually download the binary into `$DSH_HOME/dsh-pocket/bin/` (`$DSH_HOME` is usually `~/.dsh`, on Windows `%USERPROFILE%\.dsh`)
 
 ## 🗂 Architecture (single package)
 

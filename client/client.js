@@ -1439,7 +1439,7 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F504} \u5DF2\u91CD\u542F | Restarted"),
         (0, import_react2.createElement)("button", { style: styles.btn, onClick: () => setRestartNotice(false) }, "\u77E5\u9053\u4E86 | OK")
       ),
-      (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, `\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1Alsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`)
+      (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4, wordBreak: "break-all" }, `\u8FDB\u7A0B\u5728\u540E\u53F0\u8FD0\u884C\uFF08\u4E0D\u6302\u7EC8\u7AEF\uFF09\u3002\u5982\u9700\u505C\u6B62\uFF1A${status?.killHint ?? `lsof -ti :${status?.dshPort ?? 3080} | xargs kill -9`}`)
     ) : null,
     // 更新提示——左侧黄色色条（提示有新版本）；单状态：有更新/更新中/已更新自动重启，不并存
     updateInfo ? (0, import_react2.createElement)(
