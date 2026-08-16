@@ -1311,6 +1311,15 @@ function PocketSettingsTab({ rpcCall }) {
       if (s.restartNotice) {
         setRestartNotice(true);
         setUpdateInfo(null);
+        if (!sessionStorage.getItem("dshp-auto-reloaded")) {
+          sessionStorage.setItem("dshp-auto-reloaded", "1");
+          setTimeout(() => {
+            try {
+              location.reload();
+            } catch {
+            }
+          }, 2e3);
+        }
       }
     } catch {
     }
@@ -1319,6 +1328,12 @@ function PocketSettingsTab({ rpcCall }) {
     load();
     const t = setInterval(load, 3e3);
     return () => clearInterval(t);
+  }, []);
+  (0, import_react2.useEffect)(() => {
+    try {
+      sessionStorage.removeItem("dshp-auto-reloaded");
+    } catch {
+    }
   }, []);
   (0, import_react2.useEffect)(() => {
     let alive = true;

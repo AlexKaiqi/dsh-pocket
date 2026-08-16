@@ -46,9 +46,14 @@ function PocketSettingsTab({ rpcCall }) {
       setStatus(s);
       setTunnelState(s.tunnelState ?? null);
       if (s.restartNotice) {
-        // 新进程确认起来了：显示一次「已重启」，并清掉旧的更新横幅（单状态，不并存）
+        // 新进程确认起来了：显示一次「已重启」，清掉旧的更新横幅（单状态，不并存），
+        // 然后自动刷新页面加载新代码——不用用户手动刷新
         setRestartNotice(true);
         setUpdateInfo(null);
+        if (!sessionStorage.getItem('dshp-auto-reloaded')) {
+          sessionStorage.setItem('dshp-auto-reloaded', '1');
+          setTimeout(() => { try { location.reload(); } catch { /* 忽略 */ } }, 2000);
+        }
       }
     } catch { /* 忽略瞬时失败 */ }
   };
@@ -57,6 +62,11 @@ function PocketSettingsTab({ rpcCall }) {
     load();
     const t = setInterval(load, 3000);
     return () => clearInterval(t);
+  }, []);
+
+  // 每次页面加载清掉自动刷新标记——这样下次重启（更新后）才能再次触发自动刷新
+  useEffect(() => {
+    try { sessionStorage.removeItem('dshp-auto-reloaded'); } catch { /* 忽略 */ }
   }, []);
 
   // 版本检测：host 当前版本 vs npm registry latest（registry 带 CORS *）
