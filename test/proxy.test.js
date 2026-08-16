@@ -229,3 +229,17 @@ test('WS upgrade 遇非 101 响应：客户端拿到状态行，不悬挂', asyn
     await new Promise((r) => up.close(r));
   }
 });
+
+test('desktopEnvPatchScript：注入 dsh-desktop-mode/platform 参数补丁（issue #3/#4）', async () => {
+  const { desktopEnvPatchScript, DEFAULT_INJECT } = await import('../lib/proxy.mjs');
+  const patch = desktopEnvPatchScript('darwin');
+  assert.ok(patch.includes("dsh-desktop-mode"), '补 mode 参数');
+  assert.ok(patch.includes("'compatibility'"), '用最轻的 compatibility 模式（不套桌面布局）');
+  assert.ok(patch.includes("dsh-desktop-platform"), '补 platform 参数');
+  assert.ok(patch.includes("'darwin'"), '平台来自宿主');
+  assert.ok(patch.includes('history.replaceState'), '无跳转 replaceState');
+  assert.ok(DEFAULT_INJECT.includes('randomUUID'), '默认 polyfill 保留');
+  // 非法平台回退 linux
+  const fallback = desktopEnvPatchScript('weirdos');
+  assert.ok(fallback.includes("'linux'"), '非法平台回退 linux');
+});
