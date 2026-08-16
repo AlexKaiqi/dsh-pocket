@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createPocketService } from '../lib/service.mjs';
+import { createPocketService, selectLanIPv4 } from '../lib/service.mjs';
 import { installPocketRpc } from '../lib/web-rpc.js';
 import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
 
@@ -37,6 +37,48 @@ function stubInternals() {
     get tunnelUrl() { return tunnelUrl; },
   };
 }
+
+/** 构造 networkInterfaces() 形状的最小接口表。 */
+function ifaces(entries) {
+  return Object.fromEntries(entries.map(([name, ip]) => [name, [{ address: ip, family: 'IPv4', internal: false }]]));
+}
+
+test('selectLanIPv4：排在前面的 Radmin VPN 不遮蔽 WLAN 私网地址', () => {
+  assert.equal(
+    selectLanIPv4(ifaces([
+      ['Radmin VPN', '198.51.100.10'],
+      ['WLAN', '192.168.1.50'],
+    ])),
+    '192.168.1.50',
+  );
+});
+
+test('selectLanIPv4：两张私网网卡时优先名称像物理网卡的接口', () => {
+  assert.equal(
+    selectLanIPv4(ifaces([
+      ['vEthernet (WSL)', '172.25.0.1'],
+      ['以太网', '10.0.0.8'],
+    ])),
+    '10.0.0.8',
+    '同为 RFC1918 私网时，物理网卡优先于虚拟网卡',
+  );
+});
+
+test('selectLanIPv4：没有私网地址时回退到非回环地址（纯 VPN 环境仍可用）', () => {
+  assert.equal(
+    selectLanIPv4(ifaces([
+      ['Radmin VPN', '198.51.100.10'],
+      ['Loopback Pseudo-Interface 1', '127.0.0.1'],
+      ['WLAN', '169.254.12.34'],
+    ])),
+    '198.51.100.10',
+  );
+});
+
+test('selectLanIPv4：空接口表返回 null', () => {
+  assert.equal(selectLanIPv4({}), null);
+});
+
 
 test('service：startProxy → 局域网状态（含二维码）；startTunnel → 公网状态', async () => {
   const internals = stubInternals();
