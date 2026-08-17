@@ -17,6 +17,10 @@
 
 > 把 **DeepSeek Harness 装进你的口袋**：一个包、一个设置页，手机扫二维码就实时看到电脑上的同一个界面——人在外面也能用。
 
+<p align="center">
+  ⭐ 顺手留颗 Star，作者能高兴一整天 &nbsp;·&nbsp; <a href="https://github.com/shaobeichen/dsh-pocket">行，给你一颗 Star</a>
+</p>
+
 ## 这是什么
 
 **你不在电脑前，也想用电脑上的 DeepSeek Harness。**

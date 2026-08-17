@@ -17,6 +17,10 @@
 
 > Put **DeepSeek Harness in your pocket**: one package, one settings tab — scan a QR code and your phone shows exactly what's on your computer screen, live, from anywhere.
 
+<p align="center">
+  ⭐ A Star would make the author's day &nbsp;·&nbsp; <a href="https://github.com/shaobeichen/dsh-pocket">Here, take one</a>
+</p>
+
 ## What is this
 
 **You want to use DeepSeek Harness on your computer, even when you're not at the computer.**
