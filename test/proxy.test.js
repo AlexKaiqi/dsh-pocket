@@ -316,3 +316,81 @@ test('压缩：大 JSON 响应流式 gzip（客户端解压内容一致）；SSE
     await new Promise((r) => up.close(r));
   }
 });
+
+test('访问令牌认证（issue #13）：公网需登录、cookie 放行、局域网免密码、WS 校验', async () => {
+  // fetch 不能设置 Host 头（forbidden header）→ 全部用原始 http.request
+  const http = await import('node:http');
+  const TOKEN = '12345678';
+  const up = createServer((req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end('<html><body>dsh</body></html>');
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const proxy = await createPocketProxy({
+    port: 0, host: '127.0.0.1',
+    upstream: { host: '127.0.0.1', port: up.address().port },
+    auth: { getToken: () => TOKEN, isProtected: (host) => /trycloudflare\.com$/.test(host) },
+  });
+  const raw = (headers, method = 'GET', body, path = '/') => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: proxy.port, path, method, headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+  const publicH = { Host: 'abc.trycloudflare.com', Accept: 'text/html' };
+  const lanH = { Host: '192.168.1.50:3081', Accept: 'text/html' };
+
+  // 1) 公网无 cookie → 登录页
+  const r1 = await raw(publicH);
+  assert.equal(r1.status, 200);
+  assert.ok(r1.body.includes('访问密码'), '返回登录页');
+
+  // 2) 公网 API 无 cookie → 401（非 HTML 路径）
+  const r2 = await raw({ ...publicH, Accept: 'application/json' }, 'GET', undefined, '/api/hello');
+  assert.equal(r2.status, 401, 'API 未认证 401');
+
+  // 3) 错误密码 → 登录页带错误提示
+  const r3 = await raw({ ...publicH, 'Content-Type': 'application/x-www-form-urlencoded' }, 'POST', 'token=00000000', '/pocket-login');
+  assert.ok(r3.body.includes('密码错误'), '错误密码提示');
+
+  // 4) 正确密码 → Set-Cookie + 302
+  const r4 = await raw({ ...publicH, 'Content-Type': 'application/x-www-form-urlencoded' }, 'POST', 'token=' + TOKEN, '/pocket-login');
+  assert.equal(r4.status, 302, '正确密码重定向');
+  const sc = (r4.headers['set-cookie'] || []).join(';');
+  assert.ok(sc.includes('dsh_pocket_token=' + TOKEN), '种 HttpOnly cookie');
+  assert.ok(sc.includes('HttpOnly'), 'HttpOnly');
+
+  // 5) 带 cookie → 放行
+  const r5 = await raw({ Host: 'abc.trycloudflare.com', Accept: 'application/json', Cookie: 'dsh_pocket_token=' + TOKEN });
+  assert.equal(r5.status, 200, '带 cookie 放行');
+  assert.ok(r5.body.includes('dsh'), '内容正常');
+
+  // 6) 局域网 Host → 免认证
+  const r6 = await raw(lanH);
+  assert.equal(r6.status, 200);
+  assert.ok(!r6.body.includes('访问密码'), '局域网免密码直接进');
+
+  // 7) WS：未认证 → 拒绝
+  const wsOk = await new Promise((resolve) => {
+    const sock = connect(proxy.port, '127.0.0.1', () => {
+      sock.write(
+        'GET /api/events.host HTTP/1.1\r\nHost: abc.trycloudflare.com\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n',
+      );
+    });
+    let buf = '';
+    const timer = setTimeout(() => { sock.destroy(); resolve('timeout'); }, 2000);
+    sock.on('data', (c) => {
+      buf += c.toString('latin1');
+      if (buf.includes('101') || buf.includes('401')) { clearTimeout(timer); sock.destroy(); resolve(buf.includes('101') ? 'ok' : 'denied'); }
+    });
+    sock.on('error', () => { clearTimeout(timer); resolve('denied'); });
+  });
+  assert.equal(wsOk, 'denied', 'WS 未认证被拒');
+
+  await proxy.close();
+  await new Promise((r) => up.close(r));
+});

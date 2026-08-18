@@ -1518,6 +1518,11 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u81EA\u52A8\u6362\u65B0\uFF09"),
         (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 4 }, "\u{1F511} \u94FE\u63A5\u5DF2\u6CC4\u9732\uFF1F\u91CD\u542F dsh web\u2014\u2014URL \u7ACB\u5373\u6362\u65B0\uFF0C\u65E7\u94FE\u63A5\u4F5C\u5E9F\uFF0C\u65E0\u5B89\u5168\u98CE\u9669 | URL leaked? Restart dsh web \u2014 the URL rotates and the old one dies"),
+        status.accessToken ? (0, import_react2.createElement)(
+          "div",
+          { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
+          `\u{1F510} \u8BBF\u95EE\u5BC6\u7801\uFF1A${status.accessToken}\uFF08\u6BCF\u6B21\u5F00\u542F\u516C\u7F51\u53D8\u65B0\uFF1B\u624B\u673A\u6253\u5F00\u94FE\u63A5\u9700\u8F93\u5165\u6B64\u5BC6\u7801\uFF09| PIN: ${status.accessToken} \u2014 required on the phone`
+        ) : null,
         (0, import_react2.createElement)("button", { style: styles.btn, onClick: stopTunnel }, "\u5173\u95ED\u516C\u7F51 | Stop")
       ) : (0, import_react2.createElement)(
         "div",

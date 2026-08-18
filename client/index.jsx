@@ -248,6 +248,10 @@ function PocketSettingsTab({ rpcCall }) {
           h('div', { style: styles.code }, tunnelUrl),
           h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启自动换新）'),
           h('div', { style: styles.warn, marginTop: 4 }, '🔑 链接已泄露？重启 dsh web——URL 立即换新，旧链接作废，无安全风险 | URL leaked? Restart dsh web — the URL rotates and the old one dies'),
+          status.accessToken
+            ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
+              `🔐 访问密码：${status.accessToken}（每次开启公网变新；手机打开链接需输入此密码）| PIN: ${status.accessToken} — required on the phone`)
+            : null,
           h('button', { style: styles.btn, onClick: stopTunnel }, '关闭公网 | Stop'),
         )
         : h('div', null,
