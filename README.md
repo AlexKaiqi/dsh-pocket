@@ -41,12 +41,14 @@ DSH Pocket 就是干这个的：**装上它，手机扫个码，就能实时看�
 
 | 特性 | 说明 |
 |---|---|
-| 📶 局域网扫码 | 装好即用：设置 → 插件 → 手机访问，打开就有局域网二维码，手机连同一 WiFi 扫码即开 |
+| 📶 局域网扫码 | 装好即用：设置 → 手机访问，打开就有局域网二维码，手机连同一 WiFi 扫码即开 |
 | 🌐 公网扫码（人在外面） | 点「开启公网访问」→ cloudflared 隧道 → 出公网二维码，4G/任何网络都能访问 |
+| 🔐 公网访问密码 | 公网链接需输入 **8 位数字密码**（每次开启公网自动换新，旧链接立即作废）；局域网免密码 |
 | ⚡ 实时同步 | 流式输出走 WebSocket 全透传——**电脑上在输出，手机上同步在滚**，可双向操作 |
 | 📱 移动端适配 | 窄屏自动变抽屉布局（移植 dsh-web-mobile，MIT）：侧栏抽屉、会话全宽、状态栏安全区、触控优化 |
+| 🗜️ 传输压缩 | 大 JSON 响应自动 gzip/brotli（长会话 17MB → ~1.3MB），手机加载更快、更省流量 |
+| 🔁 隧道自动恢复 | DSH 重启后自动重新拉起之前开着的公网隧道，无需手动重开 |
 | 🧩 零依赖安装 | 一个 npm 包、一个设置页，没有核心/适配器要分开装；无需账号、无需服务器 |
-| 🔒 URL 即钥匙 | 无公网 URL 暴露给第三方（局域网模式）；公网 URL 每次重启自动换新 |
 
 ## 🚀 怎么用
 
@@ -73,20 +75,21 @@ npx @deepseek-ai/dsh web
 
 ### 局域网（同一 WiFi）
 
-设置 → 插件 → **手机访问** → 手机扫「📶 局域网」二维码 → 打开的就是电脑上的 DSH，实时同步。
+设置 → **手机访问** → 手机扫「📶 局域网」二维码 → 打开的就是电脑上的 DSH，实时同步。
 
 ### 公网（人在外面）
 
-同一页点「**开启公网访问**」→ 等隧道建立（首次会下载 cloudflared）→ 手机扫「🌐 公网」二维码 → 人在外面（4G/公司网）也能访问。
+同一页点「**开启公网访问**」→ 等隧道建立（首次会下载 cloudflared，macOS/Linux 走清华镜像秒下）→ 手机扫「🌐 公网」二维码 → 打开链接**输入 8 位访问密码**（密码显示在设置页公网区块，**每次开启公网变新**）→ 人在外面（4G/公司网）也能访问。
 
 > 更新到新版本：`dsh plugin --profile web update dsh-pocket --latest -w`（跨大版本时 `--latest` 是必须的，`^0.x` 范围不会自动升到 1.x）。
 
 ## ⚠️ 安全（必读）
 
-- **DSH 能执行你电脑上的代码**。二维码/URL 就是钥匙，**请勿把二维码或 URL 发给任何人**
+- **DSH 能执行你电脑上的代码**。**局域网**二维码/URL 就是钥匙（无密码），**请勿把局域网二维码或 URL 发给别人**
+- **公网**有 **8 位数字密码**保护：链接随机分配、每次开启换新密码、旧链接立即作废——泄露了也进不来，改密码/重开即可作废
 - 公网 URL 由 cloudflared 随机分配，**每次重启会变化**（旧链接自动失效，相当于天然轮换）
 - 局域网模式不暴露公网，只有同一网络内的设备能访问
-- 适合个人自用；多设备/分享场景后续会加访问令牌
+- 适合个人自用；密码存本机 `$DSH_HOME/dsh-pocket/token`，可随时重开公网换新
 
 ## 🩹 常见问题（别踩的坑）
 
@@ -136,16 +139,16 @@ npx @deepseek-ai/dsh web
    - Windows：`winget install cloudflared` 或官网下载
    - 任何平台：`npm i -g cloudflared`
 2. 挂代理（系统代理/Clash 等）后重新点「开启公网访问」
-3. 手动下载二进制放到 `$DSH_HOME/dsh-pocket/bin/` 目录（`$DSH_HOME` 一般是 `~/.dsh`，Windows 是 `%USERPROFILE%\.dsh`）
+3. 手动下载二进制放到 `$DSH_HOME/dsh-pocket/bin/` 目录（`$DSH_HOME` 一般是 `~/.dsh`，Windows 是 `%USERPROFILE%\.dsh`；文件名用 `cloudflared`（Windows 加 `.exe`）或发布资产名均可，插件都认）
 
 ## 🗂 架构（单包）
 
 | 文件 | 说明 |
 |---|---|
-| `lib/index.js` | 插件入口：自动起代理 + 注册 RPC（`inject: connection, webServer`） |
-| `lib/service.mjs` | 服务：代理生命周期、公网隧道、状态快照（含二维码 data URL） |
-| `lib/proxy.mjs` | 改头反向代理：Host/Origin → loopback，HTTP + WebSocket 全透传 + polyfill 注入 |
-| `lib/tunnel.mjs` | cloudflared 快速隧道：下载/解压/启动/解析公网 URL（HTTP/2） |
+| `lib/index.js` | 插件入口：自动起代理 + 注册 RPC + 公网访问密码管理（8 位数字，每次开启变新）+ 桌面端环境适配 |
+| `lib/service.mjs` | 服务：代理生命周期（端口自适应）、公网隧道（自动恢复）、状态快照（含二维码） |
+| `lib/proxy.mjs` | 改头反向代理：Host/Origin → loopback，HTTP + WebSocket 透传 + polyfill 注入 + gzip/brotli 压缩 + 公网访问令牌认证 |
+| `lib/tunnel.mjs` | cloudflared：多镜像源下载（清华优先）/自适应多线程/启动/解析公网 URL（HTTP/2） |
 | `lib/web-rpc.js` | loopback RPC：`status` / `tunnel.start` / `tunnel.stop` / `version` / `update` / `restart` |
 | `client/` | 设置页「手机访问」+ 移动端适配（dsh-web-mobile 移植） |
 | `bin/dsh-pocket.mjs` | CLI：局域网/公网模式，打印 URL + 二维码 |
@@ -155,7 +158,7 @@ npx @deepseek-ai/dsh web
 ```sh
 npm install
 node client/build.mjs   # 改 client/ 后重新打包
-npm test                # 代理改写 / WS 透传 / 隧道 / 服务 / RPC（7 测试）
+npm test                # 代理 / 认证 / 压缩 / 隧道 / 服务 / RPC（40 测试）
 ```
 
 ## 🤝 致谢

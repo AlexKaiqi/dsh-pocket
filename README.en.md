@@ -41,12 +41,14 @@ What it looks like — the phone shows the exact same UI as your computer, live:
 
 | Feature | Description |
 |---|---|
-| 📶 LAN QR access | Works out of the box: Settings → Plugins → Phone access — scan the LAN QR on the same Wi-Fi |
+| 📶 LAN QR access | Works out of the box: Settings → Phone access — scan the LAN QR on the same Wi-Fi |
 | 🌐 Public QR (from anywhere) | Click "Enable anywhere" → cloudflared tunnel → scan the public QR over 4G / any network |
+| 🔐 Public access PIN | Public links require an **8-digit PIN** (rotated every time the tunnel starts — old links die instantly); LAN stays password-free |
 | ⚡ Real-time sync | Streaming output passes through WebSocket untouched — what the computer renders, the phone renders live; fully interactive both ways |
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
+| 🗜️ Transfer compression | Large JSON responses are gzip/brotli'd on the fly (17MB session history → ~1.3MB) — faster loads, less mobile data |
+| 🔁 Tunnel auto-restore | After a DSH restart the previously-running public tunnel comes back automatically |
 | 🧩 Zero-dependency install | One npm package, one settings tab — no core/adapter split, no account, no server |
-| 🔒 URL is the key | No public URL exposure in LAN mode; public URL rotates on every restart |
 
 ## 🚀 Usage
 
@@ -73,20 +75,21 @@ npx @deepseek-ai/dsh web
 
 ### LAN (same Wi-Fi)
 
-Settings → Plugins → **Phone access** → scan the "📶 LAN" QR code → the phone opens the exact same DSH, in real time.
+Settings → **Phone access** → scan the "📶 LAN" QR code → the phone opens the exact same DSH, in real time.
 
 ### Public (from anywhere)
 
-On the same page click "**Enable anywhere**" → wait for the tunnel (first run downloads cloudflared) → scan the "🌐 Public" QR code → works from outside (4G / office network).
+On the same page click "**Enable anywhere**" → wait for the tunnel (first run downloads cloudflared; macOS/Linux use the Tsinghua mirror, seconds) → scan the "🌐 Public" QR code → the phone opens the link and **enters the 8-digit PIN** (shown in the settings page's public section, **rotated on every tunnel start**) → works from outside (4G / office network).
 
 > Upgrading: `dsh plugin --profile web update dsh-pocket --latest -w` (`--latest` is required across major versions — a `^0.x` range won't auto-jump to 1.x).
 
 ## ⚠️ Security (read first)
 
-- **DSH can execute code on your computer.** The QR code / URL is the key — **never share it with anyone**.
+- **DSH can execute code on your computer.** **LAN** QR/URL is the key (no password) — **never share the LAN QR or URL**.
+- **Public** access is protected by an **8-digit PIN**: the link is random, the PIN rotates on every tunnel start, and old links die instantly — even a leaked link can't get in.
 - The public URL is randomly assigned by cloudflared and **changes on every restart** (old links die automatically — a natural key rotation).
 - LAN mode exposes nothing publicly; only devices on the same network can reach it.
-- Built for personal use; access tokens for multi-device/sharing are planned.
+- Built for personal use; the PIN lives in `$DSH_HOME/dsh-pocket/token` and is re-rolled by restarting the public tunnel.
 
 ## 🩹 Troubleshooting (traps users step on)
 
@@ -135,16 +138,16 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
    - Windows: `winget install cloudflared` or from the official site
    - Any platform: `npm i -g cloudflared`
 2. Enable a proxy (system proxy / Clash etc.) and click "Enable anywhere" again
-3. Manually download the binary into `$DSH_HOME/dsh-pocket/bin/` (`$DSH_HOME` is usually `~/.dsh`, on Windows `%USERPROFILE%\.dsh`)
+3. Manually download the binary into `$DSH_HOME/dsh-pocket/bin/` (`$DSH_HOME` is usually `~/.dsh`, on Windows `%USERPROFILE%\.dsh`; name it `cloudflared` (add `.exe` on Windows) **or** the release asset name — both are recognized)
 
 ## 🗂 Architecture (single package)
 
 | File | Purpose |
 |---|---|
-| `lib/index.js` | Plugin entry: auto-start proxy + register RPC (`inject: connection, webServer`) |
-| `lib/service.mjs` | Service: proxy lifecycle, public tunnel, status snapshot (with QR data URLs) |
-| `lib/proxy.mjs` | Header-rewriting reverse proxy: Host/Origin → loopback, HTTP + WebSocket passthrough + polyfill injection |
-| `lib/tunnel.mjs` | cloudflared quick tunnel: download/extract/start/parse public URL (HTTP/2) |
+| `lib/index.js` | Plugin entry: auto-start proxy + register RPC + public-access PIN management (8 digits, rotated per tunnel start) + DSH Desktop detection |
+| `lib/service.mjs` | Service: proxy lifecycle (port auto-fallback), public tunnel (auto-restore), status snapshot (with QR data URLs) |
+| `lib/proxy.mjs` | Header-rewriting reverse proxy: Host/Origin → loopback, HTTP + WebSocket passthrough + polyfill injection + gzip/brotli compression + public-access PIN auth |
+| `lib/tunnel.mjs` | cloudflared: multi-mirror download (Tsinghua first) / adaptive parallel / start / parse public URL (HTTP/2) |
 | `lib/web-rpc.js` | Loopback RPC: `status` / `tunnel.start` / `tunnel.stop` / `version` / `update` / `restart` |
 | `client/` | "Phone access" settings tab + mobile adaptation (dsh-web-mobile port) |
 | `bin/dsh-pocket.mjs` | CLI: LAN/public modes, prints URL + QR |
@@ -154,7 +157,7 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
 ```sh
 npm install
 node client/build.mjs   # rebuild after editing client/
-npm test                # proxy rewrite / WS passthrough / tunnel / service / RPC (7 tests)
+npm test                # proxy / auth / compression / tunnel / service / RPC (40 tests)
 ```
 
 ## 🤝 Credits
