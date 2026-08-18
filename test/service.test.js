@@ -511,3 +511,45 @@ test('startProxy：端口被占（EADDRINUSE）时自动尝试下一个端口', 
   assert.ok(st.lanUrl.includes(':3082'), 'URL 使用实际端口');
   await service.dispose();
 });
+
+test('公网隧道自动恢复：开启时持久化标记，重启后 restoreTunnelIfNeeded 自动拉起（issue #11）', async () => {
+  const fsp = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const home = await fsp.mkdtemp(path.join(os.tmpdir(), 'dshp-auto-'));
+
+  let startCount = 0;
+  const internals = {
+    ...stubInternals(),
+    startTunnel: async () => {
+      startCount += 1;
+      return { url: 'https://auto.trycloudflare.com', kill: () => {} };
+    },
+  };
+  const service = createPocketService({ dshPort: 3080, port: 3081, home, internals });
+  await service.startProxy();
+
+  // 开启隧道 → 持久化标记（persistAutoTunnel 是异步 fire-and-forget，等它落盘）
+  await service.startTunnel();
+  await new Promise((r) => setTimeout(r, 60));
+  const statePath = path.join(home, 'dsh-pocket', 'tunnel-auto.json');
+  assert.ok((await fsp.readFile(statePath, 'utf8')).includes('"at"'), '开启后写入标记');
+
+  // 模拟重启：新 service 实例（相同 home）→ 自动恢复
+  const service2 = createPocketService({ dshPort: 3080, port: 3081, home, internals });
+  await service2.startProxy();
+  await service2.restoreTunnelIfNeeded();
+  assert.equal(startCount, 2, '重启后自动拉起隧道');
+
+  // 手动关闭 → 标记清除 → 下次不自动恢复
+  service2.stopTunnel();
+  await new Promise((r) => setTimeout(r, 30));
+  const afterClose = await fsp.readFile(statePath, 'utf8').catch(() => null);
+  assert.equal(afterClose, null, '关闭后删除标记');
+  const service3 = createPocketService({ dshPort: 3080, port: 3081, home, internals });
+  await service3.startProxy();
+  await service3.restoreTunnelIfNeeded();
+  assert.equal(startCount, 2, '无标记不自动恢复');
+
+  await fsp.rm(home, { recursive: true, force: true });
+});
