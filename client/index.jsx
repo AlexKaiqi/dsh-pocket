@@ -247,7 +247,6 @@ function PocketSettingsTab({ rpcCall }) {
           h('img', { src: status.tunnelQr, alt: 'Tunnel QR', style: styles.qr }),
           h('div', { style: styles.code }, tunnelUrl),
           h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启自动换新）'),
-          h('div', { style: styles.warn, marginTop: 4 }, '🔑 链接已泄露？重启 dsh web——URL 立即换新，旧链接作废，无安全风险 | URL leaked? Restart dsh web — the URL rotates and the old one dies'),
           status.accessToken
             ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
               `🔐 访问密码：${status.accessToken}（每次开启公网变新；手机打开链接需输入此密码）| PIN: ${status.accessToken} — required on the phone`)
@@ -264,10 +263,7 @@ function PocketSettingsTab({ rpcCall }) {
             : tunnelPhase === 'error'
               ? h('div', { style: { marginTop: 4, fontSize: 12, color: 'var(--dsw-alias-state-error-primary,#dc2626)' } },
                 `❌ 开启失败：${tunnelStateDetail || '未知错误 | failed'}（可重试；若是代理/VPN 问题见 README 排障）`)
-              : h('div', null,
-                h('div', { style: styles.warn, marginTop: 4 }, '⚠️ DSH 能执行电脑代码：二维码/URL 就是钥匙，请勿发给别人 | the QR/URL is the key — never share it'),
-                h('div', { style: styles.muted, marginTop: 4 }, '不慎泄露了？重启 dsh web，URL 自动换新、旧链接立即失效 | Leaked it? Restart dsh web — the URL rotates and the old one dies instantly'),
-              ),
+              : null,
         ),
     ),
 

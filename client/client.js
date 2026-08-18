@@ -1517,7 +1517,6 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("img", { src: status.tunnelQr, alt: "Tunnel QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u81EA\u52A8\u6362\u65B0\uFF09"),
-        (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 4 }, "\u{1F511} \u94FE\u63A5\u5DF2\u6CC4\u9732\uFF1F\u91CD\u542F dsh web\u2014\u2014URL \u7ACB\u5373\u6362\u65B0\uFF0C\u65E7\u94FE\u63A5\u4F5C\u5E9F\uFF0C\u65E0\u5B89\u5168\u98CE\u9669 | URL leaked? Restart dsh web \u2014 the URL rotates and the old one dies"),
         status.accessToken ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
@@ -1536,12 +1535,7 @@ function PocketSettingsTab({ rpcCall }) {
           "div",
           { style: { marginTop: 4, fontSize: 12, color: "var(--dsw-alias-state-error-primary,#dc2626)" } },
           `\u274C \u5F00\u542F\u5931\u8D25\uFF1A${tunnelStateDetail || "\u672A\u77E5\u9519\u8BEF | failed"}\uFF08\u53EF\u91CD\u8BD5\uFF1B\u82E5\u662F\u4EE3\u7406/VPN \u95EE\u9898\u89C1 README \u6392\u969C\uFF09`
-        ) : (0, import_react2.createElement)(
-          "div",
-          null,
-          (0, import_react2.createElement)("div", { style: styles.warn, marginTop: 4 }, "\u26A0\uFE0F DSH \u80FD\u6267\u884C\u7535\u8111\u4EE3\u7801\uFF1A\u4E8C\u7EF4\u7801/URL \u5C31\u662F\u94A5\u5319\uFF0C\u8BF7\u52FF\u53D1\u7ED9\u522B\u4EBA | the QR/URL is the key \u2014 never share it"),
-          (0, import_react2.createElement)("div", { style: styles.muted, marginTop: 4 }, "\u4E0D\u614E\u6CC4\u9732\u4E86\uFF1F\u91CD\u542F dsh web\uFF0CURL \u81EA\u52A8\u6362\u65B0\u3001\u65E7\u94FE\u63A5\u7ACB\u5373\u5931\u6548 | Leaked it? Restart dsh web \u2014 the URL rotates and the old one dies instantly")
-        )
+        ) : null
       )
     ),
     error ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", fontSize: 12, marginTop: 8 } }, `\u274C ${error}`) : null,
