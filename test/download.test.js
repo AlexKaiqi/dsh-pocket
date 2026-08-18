@@ -77,3 +77,26 @@ test('downloadFile：不支持 Range 时回退单线程，字节一致', async (
     await new Promise((r) => server.close(r));
   }
 });
+
+test('resolveCloudflared：手动放置的资产名文件也能命中缓存（issue #15）', async () => {
+  const fsp = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { resolveCloudflared } = await import('../lib/tunnel.mjs');
+  const home = await fsp.mkdtemp(path.join(os.tmpdir(), 'dshp-manual-'));
+  const { platform } = await import('node:process');
+  const archMap = { x64: 'amd64', arm64: 'arm64' };
+  const osName = platform === 'darwin' ? 'darwin' : platform === 'win32' ? 'windows' : 'linux';
+  const arch = archMap[process.arch] ?? process.arch;
+  const assetName = `cloudflared-${osName}-${arch}${osName === 'windows' ? '.exe' : ''}`;
+
+  // 只放资产名文件（不是 bin 名）→ 应命中，不触发下载
+  const binDir = path.join(home, 'dsh-pocket', 'bin');
+  await fsp.mkdir(binDir, { recursive: true });
+  await fsp.writeFile(path.join(binDir, assetName), 'fake-binary');
+  let downloading = false;
+  const bin = await resolveCloudflared({ home, onPhase: (p) => { if (p === 'downloading') downloading = true; } });
+  assert.equal(downloading, false, '未触发下载');
+  assert.ok(bin.includes(assetName), '命中资产名文件: ' + bin);
+  await fsp.rm(home, { recursive: true, force: true });
+});
