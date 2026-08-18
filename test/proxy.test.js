@@ -243,3 +243,76 @@ test('desktopEnvPatchScript：注入 dsh-desktop-mode/platform 参数补丁（is
   const fallback = desktopEnvPatchScript('weirdos');
   assert.ok(fallback.includes("'linux'"), '非法平台回退 linux');
 });
+
+test('压缩：大 JSON 响应流式 gzip（客户端解压内容一致）；SSE 与已压缩不重复压', async () => {
+  const zlib = await import('node:zlib');
+  const big = JSON.stringify({ items: Array.from({ length: 20000 }, (_, i) => ({ id: i, text: 'x'.repeat(50) })) });
+  const up = createServer((req, res) => {
+    if (req.url === '/api/session.history') {
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(big);
+    } else if (req.url === '/api/events.host') {
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      res.end('data: hello\n\n');
+    } else if (req.url === '/precompressed') {
+      res.writeHead(200, { 'content-type': 'application/json', 'content-encoding': 'gzip' });
+      res.end(zlib.gzipSync(big));
+    } else {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      res.end('plain');
+    }
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
+  try {
+    // 1) 大 JSON + Accept-Encoding: gzip → 被压缩且内容一致（用原始 http 请求，
+    //    避免 undici 自动解压干扰对 gzip 字节的断言）
+    const http = await import('node:http');
+    const raw1 = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/api/session.history', headers: { 'Accept-Encoding': 'gzip' } }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(raw1.headers['content-encoding'], 'gzip', '响应被 gzip');
+    assert.ok(raw1.body[0] === 0x1f && raw1.body[1] === 0x8b, 'gzip 魔数');
+    assert.equal(zlib.gunzipSync(raw1.body).toString('utf8'), big, '解压后内容一致');
+
+    // 2) SSE 不压缩
+    const r2 = await fetch(`http://127.0.0.1:${proxy.port}/api/events.host`, { headers: { 'Accept-Encoding': 'gzip' } });
+    assert.equal(r2.headers.get('content-encoding'), null, 'SSE 原样透传');
+    assert.ok((await r2.text()).includes('data: hello'), 'SSE 内容完整');
+
+    // 3) 上游已压缩 → 不重复压（原始请求避免 undici 自动解压）
+    const raw3 = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/precompressed', headers: { 'Accept-Encoding': 'gzip' } }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(raw3.headers['content-encoding'], 'gzip', '已压缩不重复压');
+    assert.equal(zlib.gunzipSync(raw3.body).toString('utf8'), big, '上游 gzip 内容一致');
+
+    // 4) 无 Accept-Encoding → 不压缩（原始请求，undici fetch 会自动加 gzip）
+    const raw4 = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/api/session.history' }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(raw4.headers['content-encoding'], undefined, '无 Accept-Encoding 不压缩');
+    assert.equal(raw4.body.toString('utf8'), big, '明文透传');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.close(r));
+  }
+});
