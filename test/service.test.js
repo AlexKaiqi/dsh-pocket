@@ -445,9 +445,8 @@ test('tsinghuaBottleUrl：按平台/架构匹配清华 bottle（Windows 无匹�
     // macOS Intel → 无 arm64 前缀的 bottle
     const intelUrl = await tsinghuaBottleUrl({ os: 'darwin', a: 'amd64' });
     assert.ok(intelUrl && !/arm64_/.test(intelUrl), 'Intel 用无前缀 bottle: ' + intelUrl);
-    // Linux
-    const linuxUrl = await tsinghuaBottleUrl({ os: 'linux', a: 'arm64' });
-    assert.ok(linuxUrl && linuxUrl.includes('arm64_linux'), 'Linux arm64: ' + linuxUrl);
+    // Linux：Homebrew bottle 的 ELF 解释器是占位符，不能直接用 → 跳过清华（issue #22）
+    assert.equal(await tsinghuaBottleUrl({ os: 'linux', a: 'arm64' }), null, 'Linux 不走清华（Homebrew bottle 不可用）');
   } finally {
     globalThis.fetch = origFetch;
   }

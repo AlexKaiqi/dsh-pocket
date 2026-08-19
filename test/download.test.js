@@ -100,3 +100,27 @@ test('resolveCloudflared：手动放置的资产名文件也能命中缓存（is
   assert.ok(bin.includes(assetName), '命中资产名文件: ' + bin);
   await fsp.rm(home, { recursive: true, force: true });
 });
+
+test('resolveCloudflared：Linux 上丢弃 Homebrew bottle 坏缓存（issue #22）', async () => {
+  const fsp = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { resolveCloudflared } = await import('../lib/tunnel.mjs');
+  const home = await fsp.mkdtemp(path.join(os.tmpdir(), 'dshp-homebrew-'));
+  const binDir = path.join(home, 'dsh-pocket', 'bin');
+  await fsp.mkdir(binDir, { recursive: true });
+  // 模拟 Linux Homebrew bottle 坏缓存：文件含 @@HOMEBREW_PREFIX@@ 占位符
+  await fsp.writeFile(path.join(binDir, 'cloudflared'), '@@HOMEBREW_PREFIX@@/lib/ld.so\x00fake-binary');
+  let downloading = false;
+  // 在 Linux 上会触发删除 + 重新下载（下载会失败因网络，但我们只验证"不命中坏缓存"）
+  try {
+    await resolveCloudflared({ home, onPhase: (p) => { if (p === 'downloading') downloading = true; } });
+  } catch { /* 下载失败可接受 */ }
+  // 坏缓存应已被删除（不再被当成可用二进制）
+  const stillThere = await fsp.readFile(path.join(binDir, 'cloudflared'), 'utf8').catch(() => null);
+  // 若系统是 Linux 且触发了下载流程 → 文件被删/被覆盖；macOS 上本测试不适用（无 Homebrew 检查）
+  if (process.platform === 'linux') {
+    assert.ok(stillThere === null || !stillThere.includes('@@HOMEBREW_PREFIX@@'), '坏缓存被丢弃');
+  }
+  await fsp.rm(home, { recursive: true, force: true });
+});
