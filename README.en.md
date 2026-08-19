@@ -43,7 +43,7 @@ What it looks like — the phone shows the exact same UI as your computer, live:
 |---|---|
 | 📶 LAN QR access | Works out of the box: Settings → Phone access — scan the LAN QR on the same Wi-Fi |
 | 🌐 Public QR (from anywhere) | Click "Enable anywhere" → cloudflared tunnel → scan the public QR over 4G / any network |
-| 🔐 Public access PIN | Public links require an **8-digit PIN** (rotated every time the tunnel starts — old links die instantly); LAN stays password-free |
+| 🔐 Access PIN | Public links require an **8-digit PIN** (rotated every time the tunnel starts — old links die instantly); LAN has its own separate **8-digit PIN** (refresh it manually in Settings) |
 | ⚡ Real-time sync | Streaming output passes through WebSocket untouched — what the computer renders, the phone renders live; fully interactive both ways |
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
 | 🗜️ Transfer compression | Large JSON responses are gzip/brotli'd on the fly (17MB session history → ~1.3MB) — faster loads, less mobile data |
@@ -75,7 +75,7 @@ npx @deepseek-ai/dsh web
 
 ### LAN (same Wi-Fi)
 
-Settings → **Phone access** → scan the "📶 LAN" QR code → the phone opens the exact same DSH, in real time.
+Settings → **Phone access** → scan the "📶 LAN" QR code → enter the **LAN PIN** (shown in the LAN block of the settings page; hit **Refresh** to get a new one) → the phone opens the exact same DSH, in real time.
 
 ### Public (from anywhere)
 
@@ -85,11 +85,11 @@ On the same page click "**Enable anywhere**" → wait for the tunnel (first run 
 
 ## ⚠️ Security (read first)
 
-- **DSH can execute code on your computer.** **LAN** QR/URL is the key (no password) — **never share the LAN QR or URL**.
+- **DSH can execute code on your computer.** **LAN** QR/URL plus its own **8-digit PIN** is the key — **never share the LAN QR, URL or PIN**.
 - **Public** access is protected by an **8-digit PIN**: the link is random, the PIN rotates on every tunnel start, and old links die instantly — even a leaked link can't get in.
 - The public URL is randomly assigned by cloudflared and **changes on every restart** (old links die automatically — a natural key rotation).
 - LAN mode exposes nothing publicly; only devices on the same network can reach it.
-- Built for personal use; the PIN lives in `$DSH_HOME/dsh-pocket/token` and is re-rolled by restarting the public tunnel.
+- Built for personal use; the public PIN lives in `$DSH_HOME/dsh-pocket/token` (re-rolled on every tunnel start) and the LAN PIN in `$DSH_HOME/dsh-pocket/token-lan` (refreshed manually in Settings).
 
 ## 💻 DSH Desktop
 
@@ -149,7 +149,7 @@ Such tools take over all traffic and often cut cloudflared's tunnel-edge connect
 
 | File | Purpose |
 |---|---|
-| `lib/index.js` | Plugin entry: auto-start proxy + register RPC + public-access PIN management (8 digits, rotated per tunnel start) + DSH Desktop detection |
+| `lib/index.js` | Plugin entry: auto-start proxy + register RPC + access-PIN management (public: 8 digits rotated per tunnel start; LAN: separate 8 digits, manually refreshable) + DSH Desktop detection |
 | `lib/service.mjs` | Service: proxy lifecycle (port auto-fallback), public tunnel (auto-restore), status snapshot (with QR data URLs) |
 | `lib/proxy.mjs` | Header-rewriting reverse proxy: Host/Origin → loopback, HTTP + WebSocket passthrough + polyfill injection + gzip/brotli compression + public-access PIN auth |
 | `lib/tunnel.mjs` | cloudflared: multi-mirror download (Tsinghua first) / adaptive parallel / start / parse public URL (HTTP/2) |
