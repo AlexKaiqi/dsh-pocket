@@ -163,7 +163,7 @@ npx @deepseek-ai/dsh web
 ```sh
 npm install
 node client/build.mjs   # 改 client/ 后重新打包
-npm test                # 代理 / 认证 / 压缩 / 隧道 / 服务 / RPC（40 测试）
+npm test                # 代理 / 认证 / 压缩 / 隧道 / 服务 / RPC（43 测试）
 ```
 
 ## 🤝 致谢
