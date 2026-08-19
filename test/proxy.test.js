@@ -394,3 +394,12 @@ test('访问令牌认证（issue #13）：公网需登录、cookie 放行、局�
   await proxy.close();
   await new Promise((r) => up.close(r));
 });
+
+test('advancedNoticeScript：注入 advanced 模式提示覆盖层（issue #19）', async () => {
+  const { advancedNoticeScript } = await import('../lib/proxy.mjs');
+  const s = advancedNoticeScript();
+  assert.ok(s.includes('dsh-pocket-advanced-notice'), '有标记');
+  assert.ok(s.includes('advanced'), '提示 advanced');
+  assert.ok(s.includes('compatibility'), '提示切回 compatibility');
+  assert.ok(s.includes('position:fixed'), '固定覆盖层（白屏也能看到）');
+});

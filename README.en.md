@@ -91,6 +91,11 @@ On the same page click "**Enable anywhere**" → wait for the tunnel (first run 
 - LAN mode exposes nothing publicly; only devices on the same network can reach it.
 - Built for personal use; the PIN lives in `$DSH_HOME/dsh-pocket/token` and is re-rolled by restarting the public tunnel.
 
+## 💻 DSH Desktop
+
+- In the desktop app, **QR screen-mirroring works**; **update/restart are managed by the desktop app** (auto-disabled here).
+- ⚠️ The desktop **advanced mode** doesn't support phone access yet (it disables the web layout; the phone gets no layout service → blank screen). Switch back to **compatibility** mode and restart; phones opening an advanced-mode page will see a clear notice overlay.
+
 ## 🩹 Troubleshooting (traps users step on)
 
 | Symptom | Cause & fix |
