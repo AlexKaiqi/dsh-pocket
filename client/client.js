@@ -47,7 +47,8 @@ var POCKET_ENDPOINTS = Object.freeze({
   tunnelStop: "tunnel.stop",
   version: "pocket.version",
   update: "pocket.update",
-  restart: "pocket.restart"
+  restart: "pocket.restart",
+  lanTokenRefresh: "token.lanRefresh"
 });
 function compareVersions(a, b) {
   const pa = String(a).replace(/^[vV]/, "").split(".");
@@ -1429,6 +1430,13 @@ function PocketSettingsTab({ rpcCall }) {
     } catch {
     }
   };
+  const refreshLanPin = async () => {
+    try {
+      const r = await call(POCKET_ENDPOINTS.lanTokenRefresh, {});
+      setStatus((s) => ({ ...s, lanToken: r.lanToken }));
+    } catch {
+    }
+  };
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
   const tunnelPhase = tunnelState?.phase ?? "idle";
@@ -1503,7 +1511,15 @@ function PocketSettingsTab({ rpcCall }) {
         null,
         (0, import_react2.createElement)("img", { src: status.lanQr, alt: "LAN QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, lanUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00")
+        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00"),
+        status.lanToken ? (0, import_react2.createElement)(
+          "div",
+          { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
+          "\u{1F510} \u8BBF\u95EE\u5BC6\u7801\uFF1A",
+          status.lanToken,
+          "\uFF08\u624B\u673A\u6253\u5F00\u9700\u8F93\u5165\uFF1B\u4E0E\u516C\u7F51\u5BC6\u7801\u5206\u5F00\uFF09",
+          (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 26, padding: "0 10px", fontSize: 12, marginLeft: 8 }, onClick: refreshLanPin }, "\u5237\u65B0 | Refresh")
+        ) : null
       ) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EE3\u7406\u672A\u5C31\u7EEA\u2026 | proxy starting\u2026")
     ),
     // 公网

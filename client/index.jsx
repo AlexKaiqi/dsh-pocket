@@ -167,6 +167,14 @@ function PocketSettingsTab({ rpcCall }) {
     try { setStatus(await call(POCKET_ENDPOINTS.tunnelStop, {})); } catch { /* 忽略 */ }
   };
 
+  // 刷新局域网访问密码（旧密码立即作废）
+  const refreshLanPin = async () => {
+    try {
+      const r = await call(POCKET_ENDPOINTS.lanTokenRefresh, {});
+      setStatus((s) => ({ ...s, lanToken: r.lanToken }));
+    } catch { /* 忽略 */ }
+  };
+
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
   const tunnelPhase = tunnelState?.phase ?? 'idle';
@@ -235,6 +243,14 @@ function PocketSettingsTab({ rpcCall }) {
           h('img', { src: status.lanQr, alt: 'LAN QR', style: styles.qr }),
           h('div', { style: styles.code }, lanUrl),
           h('div', { style: styles.muted }, '手机连接同一 WiFi 后扫码即可打开'),
+          status.lanToken
+            ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
+              '🔐 访问密码：',
+              status.lanToken,
+              '（手机打开需输入；与公网密码分开）',
+              h('button', { style: { ...styles.btn, height: 26, padding: '0 10px', fontSize: 12, marginLeft: 8 }, onClick: refreshLanPin }, '刷新 | Refresh'),
+            )
+            : null,
         )
         : h('div', { style: styles.muted }, '代理未就绪… | proxy starting…'),
     ),

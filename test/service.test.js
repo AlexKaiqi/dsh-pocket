@@ -552,3 +552,30 @@ test('公网隧道自动恢复：开启时持久化标记，重启后 restoreTun
 
   await fsp.rm(home, { recursive: true, force: true });
 });
+
+test('RPC：局域网密码独立于公网；lanTokenRefresh 刷新并返回新密码（issue #18）', async () => {
+  const internals = stubInternals();
+  const service = createPocketService({ dshPort: 3080, port: 3081, internals });
+  const conn = fakeCtxConnection();
+  let lan = '11111111';
+  installPocketRpc({ connection: conn }, {
+    service,
+    getToken: () => '99999999',
+    getLanToken: () => lan,
+    refreshLanToken: () => { lan = '22222222'; return lan; },
+    log: { error() {}, warn() {} },
+  });
+  await service.startProxy();
+
+  const s = await conn.handler(POCKET_ENDPOINTS.status, {});
+  assert.equal(s.value.accessToken, '99999999', '公网密码');
+  assert.equal(s.value.lanToken, '11111111', '局域网密码独立');
+
+  const r = await conn.handler(POCKET_ENDPOINTS.lanTokenRefresh, {});
+  assert.equal(r.ok, true);
+  assert.equal(r.value.lanToken, '22222222', '刷新返回新密码');
+  const s2 = await conn.handler(POCKET_ENDPOINTS.status, {});
+  assert.equal(s2.value.lanToken, '22222222', 'status 反映新密码');
+
+  await service.dispose();
+});

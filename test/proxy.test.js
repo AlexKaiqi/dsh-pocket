@@ -329,7 +329,7 @@ test('访问令牌认证（issue #13）：公网需登录、cookie 放行、局�
   const proxy = await createPocketProxy({
     port: 0, host: '127.0.0.1',
     upstream: { host: '127.0.0.1', port: up.address().port },
-    auth: { getToken: () => TOKEN, isProtected: (host) => /trycloudflare\.com$/.test(host) },
+    auth: { getToken: () => TOKEN, isProtected: () => true },
   });
   const raw = (headers, method = 'GET', body, path = '/') => new Promise((resolve, reject) => {
     const req = http.request({ host: '127.0.0.1', port: proxy.port, path, method, headers }, (res) => {
@@ -369,10 +369,13 @@ test('访问令牌认证（issue #13）：公网需登录、cookie 放行、局�
   assert.equal(r5.status, 200, '带 cookie 放行');
   assert.ok(r5.body.includes('dsh'), '内容正常');
 
-  // 6) 局域网 Host → 免认证
+  // 6) 局域网 Host → 也要密码（issue #18：局域网统一密码保护）
   const r6 = await raw(lanH);
   assert.equal(r6.status, 200);
-  assert.ok(!r6.body.includes('访问密码'), '局域网免密码直接进');
+  assert.ok(r6.body.includes('访问密码'), '局域网也需要密码（登录页）');
+  // 局域网带 cookie → 放行
+  const r6b = await raw({ ...lanH, Cookie: 'dsh_pocket_token=' + TOKEN });
+  assert.equal(r6b.status, 200, '局域网带 cookie 放行');
 
   // 7) WS：未认证 → 拒绝
   const wsOk = await new Promise((resolve) => {
