@@ -263,6 +263,7 @@ function PocketSettingsTab({ rpcCall }) {
           h('img', { src: status.tunnelQr, alt: 'Tunnel QR', style: styles.qr }),
           h('div', { style: styles.code }, tunnelUrl),
           h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启自动换新）'),
+          h('div', { style: { ...styles.muted, marginTop: 4 } }, '📲 HTTPS 页面可在手机浏览器中“添加到主屏幕”，以独立 PWA 窗口打开；匿名隧道换域名后需重新添加。'),
           status.accessToken
             ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
               `🔐 访问密码：${status.accessToken}（每次开启公网变新；手机打开链接需输入此密码）| PIN: ${status.accessToken} — required on the phone`)

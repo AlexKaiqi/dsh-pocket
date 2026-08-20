@@ -1533,6 +1533,7 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("img", { src: status.tunnelQr, alt: "Tunnel QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u81EA\u52A8\u6362\u65B0\uFF09"),
+        (0, import_react2.createElement)("div", { style: { ...styles.muted, marginTop: 4 } }, "\u{1F4F2} HTTPS \u9875\u9762\u53EF\u5728\u624B\u673A\u6D4F\u89C8\u5668\u4E2D\u201C\u6DFB\u52A0\u5230\u4E3B\u5C4F\u5E55\u201D\uFF0C\u4EE5\u72EC\u7ACB PWA \u7A97\u53E3\u6253\u5F00\uFF1B\u533F\u540D\u96A7\u9053\u6362\u57DF\u540D\u540E\u9700\u91CD\u65B0\u6DFB\u52A0\u3002"),
         status.accessToken ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },

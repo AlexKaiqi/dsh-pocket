@@ -140,9 +140,48 @@ test('HTML 注入：非安全上下文 polyfill 只注入 HTML 文档，不碰 J
   try {
     const html = await (await fetch(`http://127.0.0.1:${proxy.port}/`)).text();
     assert.ok(html.includes('randomUUID'), 'HTML 注入 polyfill');
+    assert.ok(html.includes('rel="manifest"'), 'HTML 注入 PWA manifest');
+    assert.ok(html.includes('dsh-pocket-sw.js'), 'HTML 注册 PWA service worker');
     assert.ok(html.indexOf('randomUUID') < html.indexOf('</head>'), '注入在 head 内、app 脚本之前');
     const js = await (await fetch(`http://127.0.0.1:${proxy.port}/app.js`)).text();
     assert.ok(!js.includes('randomUUID'), 'JS 资源不注入');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.close(r));
+  }
+});
+
+test('PWA：manifest、图标与 network-only service worker 由代理提供', async () => {
+  let upstreamHits = 0;
+  const up = createServer((req, res) => {
+    upstreamHits += 1;
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end('upstream');
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const proxy = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
+  try {
+    const manifestRes = await fetch(`http://127.0.0.1:${proxy.port}/dsh-pocket.webmanifest`);
+    assert.equal(manifestRes.status, 200);
+    assert.match(manifestRes.headers.get('content-type'), /^application\/manifest\+json/);
+    const manifest = await manifestRes.json();
+    assert.equal(manifest.display, 'standalone');
+    assert.equal(manifest.start_url, '/?source=pwa');
+    assert.ok(manifest.icons.some((icon) => icon.sizes === '512x512' && icon.purpose === 'maskable'));
+
+    const iconRes = await fetch(`http://127.0.0.1:${proxy.port}/dsh-pocket-icon-192.png`);
+    assert.equal(iconRes.status, 200);
+    assert.equal(iconRes.headers.get('content-type'), 'image/png');
+    const icon = new Uint8Array(await iconRes.arrayBuffer());
+    assert.deepEqual([...icon.slice(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], '返回真实 PNG');
+
+    const swRes = await fetch(`http://127.0.0.1:${proxy.port}/dsh-pocket-sw.js`);
+    assert.equal(swRes.status, 200);
+    assert.equal(swRes.headers.get('service-worker-allowed'), '/');
+    const sw = await swRes.text();
+    assert.ok(sw.includes("event.request.mode === 'navigate'"), '只接管导航与 Pocket 自有资源');
+    assert.ok(!sw.includes('caches.open'), '不缓存 DSH 会话或 API 数据');
+    assert.equal(upstreamHits, 0, 'PWA 自有资源不转发给 dsh web');
   } finally {
     await proxy.close();
     await new Promise((r) => up.close(r));
@@ -239,6 +278,7 @@ test('desktopEnvPatchScript：注入 dsh-desktop-mode/platform 参数补丁（is
   assert.ok(patch.includes("'darwin'"), '平台来自宿主');
   assert.ok(patch.includes('history.replaceState'), '无跳转 replaceState');
   assert.ok(DEFAULT_INJECT.includes('randomUUID'), '默认 polyfill 保留');
+  assert.ok(DEFAULT_INJECT.includes('dsh-pocket.webmanifest'), '默认注入 PWA 声明');
   // 非法平台回退 linux
   const fallback = desktopEnvPatchScript('weirdos');
   assert.ok(fallback.includes("'linux'"), '非法平台回退 linux');

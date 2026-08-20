@@ -46,6 +46,7 @@ What it looks like — the phone shows the exact same UI as your computer, live:
 | 🔐 Access PIN | Public links require an **8-digit PIN** (rotated every time the tunnel starts — old links die instantly); LAN has its own separate **8-digit PIN** (refresh it manually in Settings) |
 | ⚡ Real-time sync | Streaming output passes through WebSocket untouched — what the computer renders, the phone renders live; fully interactive both ways |
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
+| 📲 Home-screen PWA | Over HTTPS, install it to the home screen and launch in a standalone window; sessions, APIs and voice data are never cached |
 | 🗜️ Transfer compression | Large JSON responses are gzip/brotli'd on the fly (17MB session history → ~1.3MB) — faster loads, less mobile data |
 | 🔁 Tunnel auto-restore | After a DSH restart the previously-running public tunnel comes back automatically |
 | 🧩 Zero-dependency install | One npm package, one settings tab — no core/adapter split, no account, no server |
@@ -80,6 +81,15 @@ Settings → **Phone access** → scan the "📶 LAN" QR code → enter the **LA
 ### Public (from anywhere)
 
 On the same page click "**Enable anywhere**" → wait for the tunnel (first run downloads cloudflared; macOS/Linux use the Tsinghua mirror, seconds) → scan the "🌐 Public" QR code → the phone opens the link and **enters the 8-digit PIN** (shown in the settings page's public section, **rotated on every tunnel start**) → works from outside (4G / office network).
+
+### Install on the home screen (PWA)
+
+1. Sign in through Pocket's **public HTTPS URL**. A LAN `http://<IP>` URL is not a secure context, so it cannot register a PWA or access the microphone.
+2. Android Chrome/Edge: browser menu → **Install app** or **Add to Home screen**.
+3. iPhone Safari: Share → **Add to Home Screen**.
+4. Launch the new icon to run DSH in a standalone window without the browser chrome. Existing Web plugins and voice UI still come from the same DSH page.
+
+The PWA never caches DSH sessions, APIs, SSE or voice data, so it cannot show stale work while offline. Anonymous `trycloudflare.com` hostnames change whenever the tunnel restarts, which invalidates the old icon; a durable home-screen install requires a stable HTTPS hostname/tunnel.
 
 > Upgrading: `dsh plugin --profile web update dsh-pocket --latest -w` (`--latest` is required across major versions — a `^0.x` range won't auto-jump to 1.x).
 

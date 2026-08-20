@@ -48,6 +48,11 @@ test('真实链路：代理转发 + polyfill 注入 + 状态快照（无 stub）
     const html = await res.text();
     assert.ok(html.includes('real-dsh'), '代理转发到上游');
     assert.ok(html.includes('randomUUID'), '非安全上下文 polyfill 已注入');
+    assert.ok(html.includes('dsh-pocket.webmanifest'), 'PWA manifest 已注入');
+
+    const manifestRes = await fetch(`http://127.0.0.1:${st.proxyPort}/dsh-pocket.webmanifest`);
+    assert.equal(manifestRes.status, 200);
+    assert.equal((await manifestRes.json()).display, 'standalone', '真实代理提供可安装 manifest');
 
     // 状态快照：局域网 URL + 真实 qrcode 生成的二维码
     assert.ok(st.lanUrl.startsWith('http://'), '局域网 URL');
