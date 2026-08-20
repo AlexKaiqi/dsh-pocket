@@ -48,7 +48,8 @@ var POCKET_ENDPOINTS = Object.freeze({
   version: "pocket.version",
   update: "pocket.update",
   restart: "pocket.restart",
-  lanTokenRefresh: "token.lanRefresh"
+  lanTokenRefresh: "token.lanRefresh",
+  lanAuthSetEnabled: "lanAuth.setEnabled"
 });
 function compareVersions(a, b) {
   const pa = String(a).replace(/^[vV]/, "").split(".");
@@ -1437,6 +1438,13 @@ function PocketSettingsTab({ rpcCall }) {
     } catch {
     }
   };
+  const setLanAuth = async (on) => {
+    try {
+      const r = await call(POCKET_ENDPOINTS.lanAuthSetEnabled, { on });
+      setStatus((s) => ({ ...s, lanAuthEnabled: r.lanAuthEnabled }));
+    } catch {
+    }
+  };
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
   const tunnelPhase = tunnelState?.phase ?? "idle";
@@ -1506,20 +1514,38 @@ function PocketSettingsTab({ rpcCall }) {
       "div",
       { style: styles.block },
       (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F4F6} \u5C40\u57DF\u7F51\uFF08\u540C\u4E00 WiFi\uFF09| LAN"),
+      // 访问密码开关（issue #24）：默认开启；关闭后扫码直连（仅同一局域网设备可访问）
+      (0, import_react2.createElement)(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 8 } },
+        (0, import_react2.createElement)("span", { style: { fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } }, "\u5C40\u57DF\u7F51\u8BBF\u95EE\u5BC6\u7801 | LAN access PIN"),
+        (0, import_react2.createElement)("button", {
+          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status.lanAuthEnabled !== false ? 600 : 400, background: status.lanAuthEnabled !== false ? "var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))" : "var(--dsw-alias-bg-layer-1,#fff)", color: status.lanAuthEnabled !== false ? "var(--dsw-alias-label-primary-foreground, #fff)" : "var(--dsw-alias-label-primary,inherit)" },
+          onClick: () => setLanAuth(true)
+        }, "\u5F00 | On"),
+        (0, import_react2.createElement)("button", {
+          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status.lanAuthEnabled === false ? 600 : 400, background: status.lanAuthEnabled === false ? "var(--dsw-alias-state-error-primary,#dc2626)" : "var(--dsw-alias-bg-layer-1,#fff)", color: status.lanAuthEnabled === false ? "#fff" : "var(--dsw-alias-label-primary,inherit)" },
+          onClick: () => setLanAuth(false)
+        }, "\u5173 | Off")
+      ),
       lanUrl ? (0, import_react2.createElement)(
         "div",
         null,
         (0, import_react2.createElement)("img", { src: status.lanQr, alt: "LAN QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, lanUrl),
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00"),
-        status.lanToken ? (0, import_react2.createElement)(
+        status.lanAuthEnabled !== false ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
           "\u{1F510} \u8BBF\u95EE\u5BC6\u7801\uFF1A",
           status.lanToken,
           "\uFF08\u624B\u673A\u6253\u5F00\u9700\u8F93\u5165\uFF1B\u4E0E\u516C\u7F51\u5BC6\u7801\u5206\u5F00\uFF09",
           (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 26, padding: "0 10px", fontSize: 12, marginLeft: 8 }, onClick: refreshLanPin }, "\u5237\u65B0 | Refresh")
-        ) : null
+        ) : (0, import_react2.createElement)(
+          "div",
+          { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-state-warn-primary,#b45309)", lineHeight: 1.5 } },
+          "\u{1F513} \u5BC6\u7801\u5DF2\u5173\u95ED\uFF1A\u626B\u7801\u76F4\u8FDE\uFF0C\u65E0\u9700\u5BC6\u7801\uFF08\u4EC5\u540C\u4E00\u5C40\u57DF\u7F51\u8BBE\u5907\u53EF\u8BBF\u95EE\uFF1B\u516C\u7F51\u4ECD\u8981\u5BC6\u7801\uFF09| PIN off \u2014 scan & go (LAN only; public still requires PIN)"
+        )
       ) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EE3\u7406\u672A\u5C31\u7EEA\u2026 | proxy starting\u2026")
     ),
     // 公网
