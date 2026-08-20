@@ -46,7 +46,7 @@ What it looks like — the phone shows the exact same UI as your computer, live:
 | 🔐 Access PIN | Public links require an **8-digit PIN** (rotated every time the tunnel starts — old links die instantly); LAN has its own separate **8-digit PIN** (refresh it manually in Settings) |
 | ⚡ Real-time sync | Streaming output passes through WebSocket untouched — what the computer renders, the phone renders live; fully interactive both ways |
 | 📱 Mobile-adaptive layout | Narrow screens get a drawer layout automatically (ported from dsh-web-mobile, MIT): sidebar drawer, full-width conversation, safe-area insets, touch optimizations |
-| 🗜️ Transfer compression | Large JSON responses are gzip/brotli'd on the fly (17MB session history → ~1.3MB) — faster loads, less mobile data |
+| 🗜️ Transfer compression | Large JSON responses are gzip/brotli'd on the fly (17MB session history → ~1MB; brotli quality 6: fast and bandwidth-friendly) — faster loads, less mobile data |
 | 🔁 Tunnel auto-restore | After a DSH restart the previously-running public tunnel comes back automatically |
 | 🧩 Zero-dependency install | One npm package, one settings tab — no core/adapter split, no account, no server |
 

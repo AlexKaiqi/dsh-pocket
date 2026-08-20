@@ -311,6 +311,20 @@ test('压缩：大 JSON 响应流式 gzip（客户端解压内容一致）；SSE
     });
     assert.equal(raw4.headers['content-encoding'], undefined, '无 Accept-Encoding 不压缩');
     assert.equal(raw4.body.toString('utf8'), big, '明文透传');
+
+    // 5) Accept-Encoding: gzip, br → 优先 brotli（quality 6），可解压且内容一致
+    const raw5 = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/api/session.history', headers: { 'Accept-Encoding': 'gzip, br' } }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(raw5.headers['content-encoding'], 'br', 'br 优先于 gzip');
+    assert.ok(!(raw5.body[0] === 0x1f && raw5.body[1] === 0x8b), '不是 gzip 字节');
+    assert.equal(zlib.brotliDecompressSync(raw5.body).toString('utf8'), big, 'brotli 解压后内容一致');
   } finally {
     await proxy.close();
     await new Promise((r) => up.close(r));
