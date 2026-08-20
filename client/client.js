@@ -1520,11 +1520,11 @@ function PocketSettingsTab({ rpcCall }) {
         { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 8 } },
         (0, import_react2.createElement)("span", { style: { fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } }, "\u5C40\u57DF\u7F51\u8BBF\u95EE\u5BC6\u7801 | LAN access PIN"),
         (0, import_react2.createElement)("button", {
-          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status.lanAuthEnabled !== false ? 600 : 400, background: status.lanAuthEnabled !== false ? "var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))" : "var(--dsw-alias-bg-layer-1,#fff)", color: status.lanAuthEnabled !== false ? "var(--dsw-alias-label-primary-foreground, #fff)" : "var(--dsw-alias-label-primary,inherit)" },
+          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status?.lanAuthEnabled !== false ? 600 : 400, background: status?.lanAuthEnabled !== false ? "var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))" : "var(--dsw-alias-bg-layer-1,#fff)", color: status?.lanAuthEnabled !== false ? "var(--dsw-alias-label-primary-foreground, #fff)" : "var(--dsw-alias-label-primary,inherit)" },
           onClick: () => setLanAuth(true)
         }, "\u5F00 | On"),
         (0, import_react2.createElement)("button", {
-          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status.lanAuthEnabled === false ? 600 : 400, background: status.lanAuthEnabled === false ? "var(--dsw-alias-state-error-primary,#dc2626)" : "var(--dsw-alias-bg-layer-1,#fff)", color: status.lanAuthEnabled === false ? "#fff" : "var(--dsw-alias-label-primary,inherit)" },
+          style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12, fontWeight: status?.lanAuthEnabled === false ? 600 : 400, background: status?.lanAuthEnabled === false ? "var(--dsw-alias-state-error-primary,#dc2626)" : "var(--dsw-alias-bg-layer-1,#fff)", color: status?.lanAuthEnabled === false ? "#fff" : "var(--dsw-alias-label-primary,inherit)" },
           onClick: () => setLanAuth(false)
         }, "\u5173 | Off")
       ),
@@ -1534,7 +1534,7 @@ function PocketSettingsTab({ rpcCall }) {
         (0, import_react2.createElement)("img", { src: status.lanQr, alt: "LAN QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, lanUrl),
         (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00"),
-        status.lanAuthEnabled !== false ? (0, import_react2.createElement)(
+        status?.lanAuthEnabled !== false ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
           "\u{1F510} \u8BBF\u95EE\u5BC6\u7801\uFF1A",

@@ -250,11 +250,11 @@ function PocketSettingsTab({ rpcCall }) {
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 } },
         h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } }, '局域网访问密码 | LAN access PIN'),
         h('button', {
-          style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status.lanAuthEnabled !== false ? 600 : 400, background: status.lanAuthEnabled !== false ? 'var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status.lanAuthEnabled !== false ? 'var(--dsw-alias-label-primary-foreground, #fff)' : 'var(--dsw-alias-label-primary,inherit)' },
+          style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status?.lanAuthEnabled !== false ? 600 : 400, background: status?.lanAuthEnabled !== false ? 'var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status?.lanAuthEnabled !== false ? 'var(--dsw-alias-label-primary-foreground, #fff)' : 'var(--dsw-alias-label-primary,inherit)' },
           onClick: () => setLanAuth(true),
         }, '开 | On'),
         h('button', {
-          style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status.lanAuthEnabled === false ? 600 : 400, background: status.lanAuthEnabled === false ? 'var(--dsw-alias-state-error-primary,#dc2626)' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status.lanAuthEnabled === false ? '#fff' : 'var(--dsw-alias-label-primary,inherit)' },
+          style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status?.lanAuthEnabled === false ? 600 : 400, background: status?.lanAuthEnabled === false ? 'var(--dsw-alias-state-error-primary,#dc2626)' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status?.lanAuthEnabled === false ? '#fff' : 'var(--dsw-alias-label-primary,inherit)' },
           onClick: () => setLanAuth(false),
         }, '关 | Off'),
       ),
@@ -263,7 +263,7 @@ function PocketSettingsTab({ rpcCall }) {
           h('img', { src: status.lanQr, alt: 'LAN QR', style: styles.qr }),
           h('div', { style: styles.code }, lanUrl),
           h('div', { style: styles.muted }, '手机连接同一 WiFi 后扫码即可打开'),
-          status.lanAuthEnabled !== false
+          status?.lanAuthEnabled !== false
             ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
               '🔐 访问密码：',
               status.lanToken,
