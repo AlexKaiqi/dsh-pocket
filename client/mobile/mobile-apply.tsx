@@ -4,7 +4,7 @@ import { MobileNavToggle } from './MobileNavToggle.tsx'
 import { MobileNavOverlay } from './MobileNavOverlay.tsx'
 import { MobileDrawerFooter } from './MobileDrawerFooter.tsx'
 import { MOBILE_CSS } from './mobile.css.ts'
-import { NS, en, zh } from './locales.ts'
+import { dictionaries, NS } from './locales.ts'
 import type { MobileNavKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -23,7 +23,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
  * @param ctx - client root context.
  */
 export function mobileApply(ctx): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-mobile-nav: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-mobile-nav: dictionaries')
 
   ctx.effect(() => {
     const tag = document.createElement('style')

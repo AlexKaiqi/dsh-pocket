@@ -1111,10 +1111,24 @@ var en = {
   "sessionLog": "Session log",
   "files": "Files"
 };
+var dictionaries = {
+  en,
+  zh,
+  "zh-TW": { open: "\u958B\u555F\u76EE\u9304", close: "\u6536\u5408\u76EE\u9304", backdrop: "\u9EDE\u64CA\u95DC\u9589\u76EE\u9304", sessionLog: "\u532F\u51FA\u6703\u8A71\u8A18\u9304", files: "\u6A94\u6848\u700F\u89BD" },
+  ja: { open: "\u30C7\u30A3\u30EC\u30AF\u30C8\u30EA\u3092\u958B\u304F", close: "\u30C7\u30A3\u30EC\u30AF\u30C8\u30EA\u3092\u9589\u3058\u308B", backdrop: "\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u30C7\u30A3\u30EC\u30AF\u30C8\u30EA\u3092\u9589\u3058\u308B", sessionLog: "\u30BB\u30C3\u30B7\u30E7\u30F3\u30ED\u30B0", files: "\u30D5\u30A1\u30A4\u30EB" },
+  ko: { open: "\uB514\uB809\uD130\uB9AC \uC5F4\uAE30", close: "\uB514\uB809\uD130\uB9AC \uB2EB\uAE30", backdrop: "\uB514\uB809\uD130\uB9AC\uB97C \uB2EB\uC73C\uB824\uBA74 \uD074\uB9AD", sessionLog: "\uC138\uC158 \uB85C\uADF8", files: "\uD30C\uC77C" },
+  es: { open: "Abrir directorio", close: "Cerrar directorio", backdrop: "Haz clic para cerrar el directorio", sessionLog: "Registro de sesi\xF3n", files: "Archivos" },
+  fr: { open: "Ouvrir le dossier", close: "Fermer le dossier", backdrop: "Cliquez pour fermer le dossier", sessionLog: "Journal de session", files: "Fichiers" },
+  de: { open: "Verzeichnis \xF6ffnen", close: "Verzeichnis schlie\xDFen", backdrop: "Klicken, um das Verzeichnis zu schlie\xDFen", sessionLog: "Sitzungsprotokoll", files: "Dateien" },
+  "pt-BR": { open: "Abrir diret\xF3rio", close: "Fechar diret\xF3rio", backdrop: "Clique para fechar o diret\xF3rio", sessionLog: "Log da sess\xE3o", files: "Arquivos" },
+  ru: { open: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433", close: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433", backdrop: "\u041D\u0430\u0436\u043C\u0438\u0442\u0435, \u0447\u0442\u043E\u0431\u044B \u0437\u0430\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433", sessionLog: "\u0416\u0443\u0440\u043D\u0430\u043B \u0441\u0435\u0430\u043D\u0441\u0430", files: "\u0424\u0430\u0439\u043B\u044B" },
+  ar: { open: "\u0641\u062A\u062D \u0627\u0644\u0645\u062C\u0644\u062F", close: "\u0625\u063A\u0644\u0627\u0642 \u0627\u0644\u0645\u062C\u0644\u062F", backdrop: "\u0627\u0646\u0642\u0631 \u0644\u0625\u063A\u0644\u0627\u0642 \u0627\u0644\u0645\u062C\u0644\u062F", sessionLog: "\u0633\u062C\u0644 \u0627\u0644\u062C\u0644\u0633\u0629", files: "\u0627\u0644\u0645\u0644\u0641\u0627\u062A" },
+  hi: { open: "\u0921\u093E\u092F\u0930\u0947\u0915\u094D\u091F\u0930\u0940 \u0916\u094B\u0932\u0947\u0902", close: "\u0921\u093E\u092F\u0930\u0947\u0915\u094D\u091F\u0930\u0940 \u092C\u0902\u0926 \u0915\u0930\u0947\u0902", backdrop: "\u0921\u093E\u092F\u0930\u0947\u0915\u094D\u091F\u0930\u0940 \u092C\u0902\u0926 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0915\u094D\u0932\u093F\u0915 \u0915\u0930\u0947\u0902", sessionLog: "\u0938\u0924\u094D\u0930 \u0932\u0949\u0917", files: "\u092B\u093C\u093E\u0907\u0932\u0947\u0902" }
+};
 
 // client/mobile/mobile-apply.tsx
 function mobileApply(ctx) {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), "dsh-mobile-nav: dictionaries");
+  ctx.effect(() => ctx.locale.register(NS, dictionaries), "dsh-mobile-nav: dictionaries");
   ctx.effect(() => {
     const tag = document.createElement("style");
     tag.dataset.plugin = "@dsh-external/dsh-mobile-nav";
@@ -1305,7 +1319,23 @@ var styles = {
   qr: { width: 220, height: 220, borderRadius: 10, border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", margin: "8px 0" },
   warn: { color: "var(--dsw-alias-state-warn-primary,#b45309)", fontSize: 12, lineHeight: 1.5 }
 };
-function PocketSettingsTab({ rpcCall }) {
+var POCKET_NS = "pocket";
+var pocketEn = { settingsLabel: "Phone access", title: "Phone access", subtitle: "Scan with your phone to open this exact screen and stay in sync.", lan: "LAN (same Wi-Fi)", lanHint: "Connect the phone to the same Wi-Fi, then scan to open.", anywhere: "Anywhere", anywhereHint: "Scan from any network. The URL changes after each restart.", enableAnywhere: "Enable anywhere", stopAnywhere: "Stop public access", proxyStarting: "Proxy starting\u2026" };
+var pocketDictionaries = {
+  en: pocketEn,
+  zh: { settingsLabel: "\u624B\u673A\u8BBF\u95EE", title: "\u624B\u673A\u8BBF\u95EE", subtitle: "\u624B\u673A\u626B\u7801\u6253\u5F00\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5E76\u4FDD\u6301\u5B9E\u65F6\u540C\u6B65\u3002", lan: "\u5C40\u57DF\u7F51\uFF08\u540C\u4E00 Wi-Fi\uFF09", lanHint: "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 Wi-Fi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00\u3002", anywhere: "\u516C\u7F51\u8BBF\u95EE", anywhereHint: "\u4EFB\u4F55\u7F51\u7EDC\u5747\u53EF\u626B\u7801\u4F7F\u7528\uFF1B\u6BCF\u6B21\u91CD\u542F\u540E URL \u4F1A\u66F4\u65B0\u3002", enableAnywhere: "\u5F00\u542F\u516C\u7F51\u8BBF\u95EE", stopAnywhere: "\u5173\u95ED\u516C\u7F51\u8BBF\u95EE", proxyStarting: "\u4EE3\u7406\u542F\u52A8\u4E2D\u2026" },
+  "zh-TW": { settingsLabel: "\u624B\u6A5F\u5B58\u53D6", title: "\u624B\u6A5F\u5B58\u53D6", subtitle: "\u7528\u624B\u6A5F\u6383\u78BC\u958B\u555F\u76F8\u540C\u756B\u9762\u4E26\u5373\u6642\u540C\u6B65\u3002", lan: "\u5340\u57DF\u7DB2\u8DEF\uFF08\u540C\u4E00 Wi-Fi\uFF09", lanHint: "\u624B\u6A5F\u9023\u4E0A\u540C\u4E00 Wi-Fi \u5F8C\u6383\u78BC\u5373\u53EF\u958B\u555F\u3002", anywhere: "\u516C\u7DB2\u5B58\u53D6", anywhereHint: "\u4EFB\u4F55\u7DB2\u8DEF\u90FD\u53EF\u6383\u78BC\uFF1B\u6BCF\u6B21\u91CD\u555F\u5F8C URL \u6703\u66F4\u65B0\u3002", enableAnywhere: "\u958B\u555F\u516C\u7DB2\u5B58\u53D6", stopAnywhere: "\u95DC\u9589\u516C\u7DB2\u5B58\u53D6", proxyStarting: "\u4EE3\u7406\u555F\u52D5\u4E2D\u2026" },
+  ja: { settingsLabel: "\u30B9\u30DE\u30FC\u30C8\u30D5\u30A9\u30F3\u63A5\u7D9A", title: "\u30B9\u30DE\u30FC\u30C8\u30D5\u30A9\u30F3\u63A5\u7D9A", subtitle: "\u30B9\u30DE\u30FC\u30C8\u30D5\u30A9\u30F3\u3067\u30B9\u30AD\u30E3\u30F3\u3059\u308B\u3068\u3001\u3053\u306E\u753B\u9762\u304C\u958B\u304D\u30EA\u30A2\u30EB\u30BF\u30A4\u30E0\u3067\u540C\u671F\u3057\u307E\u3059\u3002", lan: "LAN\uFF08\u540C\u3058 Wi-Fi\uFF09", lanHint: "\u540C\u3058 Wi-Fi \u306B\u63A5\u7D9A\u3057\u3066\u30B9\u30AD\u30E3\u30F3\u3057\u3066\u304F\u3060\u3055\u3044\u3002", anywhere: "\u5916\u90E8\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF", anywhereHint: "\u3069\u306E\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u304B\u3089\u3067\u3082\u5229\u7528\u3067\u304D\u307E\u3059\u3002\u518D\u8D77\u52D5\u3054\u3068\u306B URL \u304C\u5909\u308F\u308A\u307E\u3059\u3002", enableAnywhere: "\u5916\u90E8\u30A2\u30AF\u30BB\u30B9\u3092\u6709\u52B9\u5316", stopAnywhere: "\u5916\u90E8\u30A2\u30AF\u30BB\u30B9\u3092\u505C\u6B62", proxyStarting: "\u30D7\u30ED\u30AD\u30B7\u3092\u8D77\u52D5\u4E2D\u2026" },
+  ko: { settingsLabel: "\uD734\uB300\uD3F0 \uC811\uC18D", title: "\uD734\uB300\uD3F0 \uC811\uC18D", subtitle: "\uD734\uB300\uD3F0\uC73C\uB85C \uC2A4\uCE94\uD558\uBA74 \uAC19\uC740 \uD654\uBA74\uC774 \uC5F4\uB9AC\uACE0 \uC2E4\uC2DC\uAC04\uC73C\uB85C \uB3D9\uAE30\uD654\uB429\uB2C8\uB2E4.", lan: "LAN(\uB3D9\uC77C\uD55C Wi-Fi)", lanHint: "\uAC19\uC740 Wi-Fi\uC5D0 \uC5F0\uACB0\uD55C \uD6C4 \uC2A4\uCE94\uD558\uC138\uC694.", anywhere: "\uC678\uBD80 \uB124\uD2B8\uC6CC\uD06C", anywhereHint: "\uC5B4\uB5A4 \uB124\uD2B8\uC6CC\uD06C\uC5D0\uC11C\uB3C4 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC73C\uBA70 \uC7AC\uC2DC\uC791\uD560 \uB54C URL\uC774 \uBC14\uB01D\uB2C8\uB2E4.", enableAnywhere: "\uC678\uBD80 \uC811\uC18D \uD65C\uC131\uD654", stopAnywhere: "\uC678\uBD80 \uC811\uC18D \uC911\uC9C0", proxyStarting: "\uD504\uB85D\uC2DC \uC2DC\uC791 \uC911\u2026" },
+  es: { settingsLabel: "Acceso m\xF3vil", title: "Acceso m\xF3vil", subtitle: "Escanea con el tel\xE9fono para abrir esta misma pantalla y mantenerla sincronizada.", lan: "LAN (misma Wi-Fi)", lanHint: "Conecta el tel\xE9fono a la misma Wi-Fi y escanea.", anywhere: "Desde cualquier lugar", anywhereHint: "Funciona desde cualquier red; la URL cambia tras cada reinicio.", enableAnywhere: "Activar acceso externo", stopAnywhere: "Detener acceso p\xFAblico", proxyStarting: "Iniciando proxy\u2026" },
+  fr: { settingsLabel: "Acc\xE8s mobile", title: "Acc\xE8s mobile", subtitle: "Scannez avec votre t\xE9l\xE9phone pour ouvrir cet \xE9cran et le synchroniser en direct.", lan: "LAN (m\xEAme Wi-Fi)", lanHint: "Connectez le t\xE9l\xE9phone au m\xEAme Wi-Fi, puis scannez.", anywhere: "Depuis partout", anywhereHint: "Accessible depuis tout r\xE9seau ; l\u2019URL change apr\xE8s chaque red\xE9marrage.", enableAnywhere: "Activer l\u2019acc\xE8s externe", stopAnywhere: "Arr\xEAter l\u2019acc\xE8s public", proxyStarting: "D\xE9marrage du proxy\u2026" },
+  de: { settingsLabel: "Handyzugriff", title: "Handyzugriff", subtitle: "Mit dem Handy scannen, um denselben Bildschirm synchron zu \xF6ffnen.", lan: "LAN (gleiches WLAN)", lanHint: "Handy mit demselben WLAN verbinden und scannen.", anywhere: "Von \xFCberall", anywhereHint: "Aus jedem Netzwerk erreichbar; die URL \xE4ndert sich nach jedem Neustart.", enableAnywhere: "Externen Zugriff aktivieren", stopAnywhere: "\xD6ffentlichen Zugriff beenden", proxyStarting: "Proxy wird gestartet\u2026" },
+  "pt-BR": { settingsLabel: "Acesso pelo celular", title: "Acesso pelo celular", subtitle: "Escaneie com o celular para abrir esta mesma tela e mant\xEA-la sincronizada.", lan: "LAN (mesmo Wi-Fi)", lanHint: "Conecte o celular ao mesmo Wi-Fi e escaneie.", anywhere: "De qualquer lugar", anywhereHint: "Funciona em qualquer rede; a URL muda ap\xF3s cada reinicializa\xE7\xE3o.", enableAnywhere: "Ativar acesso externo", stopAnywhere: "Parar acesso p\xFAblico", proxyStarting: "Iniciando proxy\u2026" },
+  ru: { settingsLabel: "\u0414\u043E\u0441\u0442\u0443\u043F \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430", title: "\u0414\u043E\u0441\u0442\u0443\u043F \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430", subtitle: "\u041E\u0442\u0441\u043A\u0430\u043D\u0438\u0440\u0443\u0439\u0442\u0435 \u043A\u043E\u0434 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C, \u0447\u0442\u043E\u0431\u044B \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u044D\u0442\u043E\u0442 \u044D\u043A\u0440\u0430\u043D \u0441 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0435\u0439.", lan: "LAN (\u0442\u0430 \u0436\u0435 Wi-Fi)", lanHint: "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u043A \u0442\u043E\u0439 \u0436\u0435 Wi-Fi \u0438 \u043E\u0442\u0441\u043A\u0430\u043D\u0438\u0440\u0443\u0439\u0442\u0435 \u043A\u043E\u0434.", anywhere: "\u0418\u0437 \u043B\u044E\u0431\u043E\u0439 \u0441\u0435\u0442\u0438", anywhereHint: "\u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0438\u0437 \u043B\u044E\u0431\u043E\u0439 \u0441\u0435\u0442\u0438; URL \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u043A\u0430.", enableAnywhere: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043D\u0435\u0448\u043D\u0438\u0439 \u0434\u043E\u0441\u0442\u0443\u043F", stopAnywhere: "\u041E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043F\u0443\u0431\u043B\u0438\u0447\u043D\u044B\u0439 \u0434\u043E\u0441\u0442\u0443\u043F", proxyStarting: "\u0417\u0430\u043F\u0443\u0441\u043A \u043F\u0440\u043E\u043A\u0441\u0438\u2026" },
+  ar: { settingsLabel: "\u0627\u0644\u0648\u0635\u0648\u0644 \u0645\u0646 \u0627\u0644\u0647\u0627\u062A\u0641", title: "\u0627\u0644\u0648\u0635\u0648\u0644 \u0645\u0646 \u0627\u0644\u0647\u0627\u062A\u0641", subtitle: "\u0627\u0645\u0633\u062D \u0627\u0644\u0631\u0645\u0632 \u0628\u0627\u0644\u0647\u0627\u062A\u0641 \u0644\u0641\u062A\u062D \u0627\u0644\u0634\u0627\u0634\u0629 \u0646\u0641\u0633\u0647\u0627 \u0645\u0639 \u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629.", lan: "\u0627\u0644\u0634\u0628\u0643\u0629 \u0627\u0644\u0645\u062D\u0644\u064A\u0629 (Wi-Fi \u0646\u0641\u0633\u0647)", lanHint: "\u0635\u0644 \u0627\u0644\u0647\u0627\u062A\u0641 \u0628\u0634\u0628\u0643\u0629 Wi-Fi \u0646\u0641\u0633\u0647\u0627 \u062B\u0645 \u0627\u0645\u0633\u062D \u0627\u0644\u0631\u0645\u0632.", anywhere: "\u0645\u0646 \u0623\u064A \u0645\u0643\u0627\u0646", anywhereHint: "\u064A\u0639\u0645\u0644 \u0645\u0646 \u0623\u064A \u0634\u0628\u0643\u0629\u061B \u064A\u062A\u063A\u064A\u0631 \u0627\u0644\u0631\u0627\u0628\u0637 \u0628\u0639\u062F \u0643\u0644 \u0625\u0639\u0627\u062F\u0629 \u062A\u0634\u063A\u064A\u0644.", enableAnywhere: "\u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u0648\u0635\u0648\u0644 \u0627\u0644\u062E\u0627\u0631\u062C\u064A", stopAnywhere: "\u0625\u064A\u0642\u0627\u0641 \u0627\u0644\u0648\u0635\u0648\u0644 \u0627\u0644\u0639\u0627\u0645", proxyStarting: "\u062C\u0627\u0631\u064D \u062A\u0634\u063A\u064A\u0644 \u0627\u0644\u0648\u0643\u064A\u0644\u2026" },
+  hi: { settingsLabel: "\u092B\u093C\u094B\u0928 \u0938\u0947 \u092A\u0939\u0941\u0901\u091A", title: "\u092B\u093C\u094B\u0928 \u0938\u0947 \u092A\u0939\u0941\u0901\u091A", subtitle: "\u092F\u0939\u0940 \u0938\u094D\u0915\u094D\u0930\u0940\u0928 \u0916\u094B\u0932\u0928\u0947 \u0914\u0930 \u0932\u093E\u0907\u0935 \u0938\u093F\u0902\u0915 \u0930\u0916\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u092B\u093C\u094B\u0928 \u0938\u0947 \u0938\u094D\u0915\u0948\u0928 \u0915\u0930\u0947\u0902\u0964", lan: "LAN (\u0935\u0939\u0940 Wi-Fi)", lanHint: "\u092B\u093C\u094B\u0928 \u0915\u094B \u0909\u0938\u0940 Wi-Fi \u0938\u0947 \u091C\u094B\u0921\u093C\u0947\u0902 \u0914\u0930 \u0938\u094D\u0915\u0948\u0928 \u0915\u0930\u0947\u0902\u0964", anywhere: "\u0915\u0939\u0940\u0902 \u0938\u0947 \u092D\u0940", anywhereHint: "\u0915\u093F\u0938\u0940 \u092D\u0940 \u0928\u0947\u091F\u0935\u0930\u094D\u0915 \u0938\u0947 \u091A\u0932\u0924\u093E \u0939\u0948; \u0939\u0930 \u0930\u0940\u0938\u094D\u091F\u093E\u0930\u094D\u091F \u0915\u0947 \u092C\u093E\u0926 URL \u092C\u0926\u0932\u0924\u093E \u0939\u0948\u0964", enableAnywhere: "\u092C\u093E\u0939\u0930\u0940 \u092A\u0939\u0941\u0901\u091A \u091A\u093E\u0932\u0942 \u0915\u0930\u0947\u0902", stopAnywhere: "\u0938\u093E\u0930\u094D\u0935\u091C\u0928\u093F\u0915 \u092A\u0939\u0941\u0901\u091A \u0930\u094B\u0915\u0947\u0902", proxyStarting: "\u092A\u094D\u0930\u0949\u0915\u094D\u0938\u0940 \u0936\u0941\u0930\u0942 \u0939\u094B \u0930\u0939\u093E \u0939\u0948\u2026" }
+};
+function PocketSettingsTab({ rpcCall, t }) {
   const [status, setStatus] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
@@ -1315,8 +1345,8 @@ function PocketSettingsTab({ rpcCall }) {
   const [isDesktop, setIsDesktop] = (0, import_react2.useState)(false);
   const [now, setNow] = (0, import_react2.useState)(Date.now());
   (0, import_react2.useEffect)(() => {
-    const t = setInterval(() => setNow(Date.now()), 1e3);
-    return () => clearInterval(t);
+    const t2 = setInterval(() => setNow(Date.now()), 1e3);
+    return () => clearInterval(t2);
   }, []);
   const elapsed = (startedAt) => startedAt ? Math.max(0, Math.floor((Date.now() - startedAt) / 1e3)) : 0;
   const call = async (endpoint, payload) => {
@@ -1348,8 +1378,8 @@ function PocketSettingsTab({ rpcCall }) {
   };
   (0, import_react2.useEffect)(() => {
     load();
-    const t = setInterval(load, 3e3);
-    return () => clearInterval(t);
+    const t2 = setInterval(load, 3e3);
+    return () => clearInterval(t2);
   }, []);
   (0, import_react2.useEffect)(() => {
     try {
@@ -1375,10 +1405,10 @@ function PocketSettingsTab({ rpcCall }) {
       }
     };
     check();
-    const t = setInterval(check, 5 * 60 * 1e3);
+    const t2 = setInterval(check, 5 * 60 * 1e3);
     return () => {
       alive = false;
-      clearInterval(t);
+      clearInterval(t2);
     };
   }, [isDesktop]);
   const restartPocket = async () => {
@@ -1460,8 +1490,8 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)(
         "div",
         null,
-        (0, import_react2.createElement)("strong", null, "\u{1F4F1} \u624B\u673A\u8BBF\u95EE | Phone access"),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u626B\u7801\u6253\u5F00\u7684\u5C31\u662F\u7535\u8111\u4E0A\u7684\u8FD9\u4E2A\u754C\u9762\uFF0C\u5B9E\u65F6\u540C\u6B65 | the phone shows this exact screen, live")
+        (0, import_react2.createElement)("strong", null, `\u{1F4F1} ${t("title")}`),
+        (0, import_react2.createElement)("div", { style: styles.muted }, t("subtitle"))
       ),
       (0, import_react2.createElement)(
         "div",
@@ -1513,13 +1543,13 @@ function PocketSettingsTab({ rpcCall }) {
     (0, import_react2.createElement)(
       "div",
       { style: styles.block },
-      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F4F6} \u5C40\u57DF\u7F51\uFF08\u540C\u4E00 WiFi\uFF09| LAN"),
+      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F4F6} ${t("lan")}`),
       lanUrl ? (0, import_react2.createElement)(
         "div",
         null,
         (0, import_react2.createElement)("img", { src: status.lanQr, alt: "LAN QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, lanUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u624B\u673A\u8FDE\u63A5\u540C\u4E00 WiFi \u540E\u626B\u7801\u5373\u53EF\u6253\u5F00"),
+        (0, import_react2.createElement)("div", { style: styles.muted }, t("lanHint")),
         // 访问密码开关（issue #24）：默认开启；关闭后扫码直连（仅同一局域网设备可访问）
         (0, import_react2.createElement)(
           "div",
@@ -1546,30 +1576,30 @@ function PocketSettingsTab({ rpcCall }) {
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-state-warn-primary,#b45309)", lineHeight: 1.5 } },
           "\u{1F513} \u5BC6\u7801\u5DF2\u5173\u95ED\uFF1A\u626B\u7801\u76F4\u8FDE\uFF0C\u65E0\u9700\u5BC6\u7801\uFF08\u4EC5\u540C\u4E00\u5C40\u57DF\u7F51\u8BBE\u5907\u53EF\u8BBF\u95EE\uFF1B\u516C\u7F51\u4ECD\u8981\u5BC6\u7801\uFF09| PIN off \u2014 scan & go (LAN only; public still requires PIN)"
         )
-      ) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EE3\u7406\u672A\u5C31\u7EEA\u2026 | proxy starting\u2026")
+      ) : (0, import_react2.createElement)("div", { style: styles.muted }, t("proxyStarting"))
     ),
     // 公网
     (0, import_react2.createElement)(
       "div",
       { style: styles.block },
-      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, "\u{1F310} \u516C\u7F51\uFF08\u4EBA\u5728\u5916\u9762\uFF09| Anywhere"),
+      (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 13 } }, `\u{1F310} ${t("anywhere")}`),
       tunnelUrl ? (0, import_react2.createElement)(
         "div",
         null,
         (0, import_react2.createElement)("img", { src: status.tunnelQr, alt: "Tunnel QR", style: styles.qr }),
         (0, import_react2.createElement)("div", { style: styles.code }, tunnelUrl),
-        (0, import_react2.createElement)("div", { style: styles.muted }, "\u4EFB\u4F55\u7F51\u7EDC\u626B\u7801\u5373\u7528\uFF08URL \u6BCF\u6B21\u91CD\u542F\u81EA\u52A8\u6362\u65B0\uFF09"),
+        (0, import_react2.createElement)("div", { style: styles.muted }, t("anywhereHint")),
         (0, import_react2.createElement)("div", { style: { ...styles.muted, marginTop: 4 } }, "\u{1F4F2} HTTPS \u9875\u9762\u53EF\u5728\u624B\u673A\u6D4F\u89C8\u5668\u4E2D\u201C\u6DFB\u52A0\u5230\u4E3B\u5C4F\u5E55\u201D\uFF0C\u4EE5\u72EC\u7ACB PWA \u7A97\u53E3\u6253\u5F00\uFF1B\u533F\u540D\u96A7\u9053\u6362\u57DF\u540D\u540E\u9700\u91CD\u65B0\u6DFB\u52A0\u3002"),
         status.accessToken ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 6, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)", lineHeight: 1.5 } },
           `\u{1F510} \u8BBF\u95EE\u5BC6\u7801\uFF1A${status.accessToken}\uFF08\u6BCF\u6B21\u5F00\u542F\u516C\u7F51\u53D8\u65B0\uFF1B\u624B\u673A\u6253\u5F00\u94FE\u63A5\u9700\u8F93\u5165\u6B64\u5BC6\u7801\uFF09| PIN: ${status.accessToken} \u2014 required on the phone`
         ) : null,
-        (0, import_react2.createElement)("button", { style: styles.btn, onClick: stopTunnel }, "\u5173\u95ED\u516C\u7F51 | Stop")
+        (0, import_react2.createElement)("button", { style: styles.btn, onClick: stopTunnel }, t("stopAnywhere"))
       ) : (0, import_react2.createElement)(
         "div",
         null,
-        (0, import_react2.createElement)("button", { style: { ...styles.primary, margin: "8px 0" }, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? "\u5F00\u542F\u4E2D\u2026" : "\u5F00\u542F\u516C\u7F51\u8BBF\u95EE | Enable anywhere"),
+        (0, import_react2.createElement)("button", { style: { ...styles.primary, margin: "8px 0" }, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? t("proxyStarting") : t("enableAnywhere")),
         tunnelStarting ? (0, import_react2.createElement)(
           "div",
           { style: { marginTop: 4, fontSize: 12, color: "var(--dsw-alias-label-secondary,#6b7280)" } },
@@ -1597,6 +1627,8 @@ function PocketSettingsTab({ rpcCall }) {
 function apply(ctx) {
   mobileApply(ctx);
   const rpcCall = (endpoint, payload, signal) => ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
+  ctx.effect(() => ctx.locale.register(POCKET_NS, pocketDictionaries), "dsh-pocket: dictionaries");
+  const t = ctx.locale.bind(POCKET_NS);
   ctx.slots.inject(
     "settings.section",
     () => ctx.slots.register(
@@ -1604,8 +1636,9 @@ function apply(ctx) {
         name: "settings.section",
         id: "pocket",
         order: 1,
-        label: () => "\u624B\u673A\u8BBF\u95EE",
-        inject: () => ({ rpcCall })
+        label: () => t("settingsLabel"),
+        locale: POCKET_NS,
+        inject: () => ({ rpcCall, t })
       },
       PocketSettingsTab
     )

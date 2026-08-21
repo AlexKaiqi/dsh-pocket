@@ -31,7 +31,24 @@ const styles = {
   warn: { color: 'var(--dsw-alias-state-warn-primary,#b45309)', fontSize: 12, lineHeight: 1.5 },
 };
 
-function PocketSettingsTab({ rpcCall }) {
+const POCKET_NS = 'pocket';
+const pocketEn = { settingsLabel: 'Phone access', title: 'Phone access', subtitle: 'Scan with your phone to open this exact screen and stay in sync.', lan: 'LAN (same Wi-Fi)', lanHint: 'Connect the phone to the same Wi-Fi, then scan to open.', anywhere: 'Anywhere', anywhereHint: 'Scan from any network. The URL changes after each restart.', enableAnywhere: 'Enable anywhere', stopAnywhere: 'Stop public access', proxyStarting: 'Proxy starting…' };
+const pocketDictionaries = {
+  en: pocketEn,
+  zh: { settingsLabel: '手机访问', title: '手机访问', subtitle: '手机扫码打开电脑上的这个界面，并保持实时同步。', lan: '局域网（同一 Wi-Fi）', lanHint: '手机连接同一 Wi-Fi 后扫码即可打开。', anywhere: '公网访问', anywhereHint: '任何网络均可扫码使用；每次重启后 URL 会更新。', enableAnywhere: '开启公网访问', stopAnywhere: '关闭公网访问', proxyStarting: '代理启动中…' },
+  'zh-TW': { settingsLabel: '手機存取', title: '手機存取', subtitle: '用手機掃碼開啟相同畫面並即時同步。', lan: '區域網路（同一 Wi-Fi）', lanHint: '手機連上同一 Wi-Fi 後掃碼即可開啟。', anywhere: '公網存取', anywhereHint: '任何網路都可掃碼；每次重啟後 URL 會更新。', enableAnywhere: '開啟公網存取', stopAnywhere: '關閉公網存取', proxyStarting: '代理啟動中…' },
+  ja: { settingsLabel: 'スマートフォン接続', title: 'スマートフォン接続', subtitle: 'スマートフォンでスキャンすると、この画面が開きリアルタイムで同期します。', lan: 'LAN（同じ Wi-Fi）', lanHint: '同じ Wi-Fi に接続してスキャンしてください。', anywhere: '外部ネットワーク', anywhereHint: 'どのネットワークからでも利用できます。再起動ごとに URL が変わります。', enableAnywhere: '外部アクセスを有効化', stopAnywhere: '外部アクセスを停止', proxyStarting: 'プロキシを起動中…' },
+  ko: { settingsLabel: '휴대폰 접속', title: '휴대폰 접속', subtitle: '휴대폰으로 스캔하면 같은 화면이 열리고 실시간으로 동기화됩니다.', lan: 'LAN(동일한 Wi-Fi)', lanHint: '같은 Wi-Fi에 연결한 후 스캔하세요.', anywhere: '외부 네트워크', anywhereHint: '어떤 네트워크에서도 사용할 수 있으며 재시작할 때 URL이 바뀝니다.', enableAnywhere: '외부 접속 활성화', stopAnywhere: '외부 접속 중지', proxyStarting: '프록시 시작 중…' },
+  es: { settingsLabel: 'Acceso móvil', title: 'Acceso móvil', subtitle: 'Escanea con el teléfono para abrir esta misma pantalla y mantenerla sincronizada.', lan: 'LAN (misma Wi-Fi)', lanHint: 'Conecta el teléfono a la misma Wi-Fi y escanea.', anywhere: 'Desde cualquier lugar', anywhereHint: 'Funciona desde cualquier red; la URL cambia tras cada reinicio.', enableAnywhere: 'Activar acceso externo', stopAnywhere: 'Detener acceso público', proxyStarting: 'Iniciando proxy…' },
+  fr: { settingsLabel: 'Accès mobile', title: 'Accès mobile', subtitle: 'Scannez avec votre téléphone pour ouvrir cet écran et le synchroniser en direct.', lan: 'LAN (même Wi-Fi)', lanHint: 'Connectez le téléphone au même Wi-Fi, puis scannez.', anywhere: 'Depuis partout', anywhereHint: 'Accessible depuis tout réseau ; l’URL change après chaque redémarrage.', enableAnywhere: 'Activer l’accès externe', stopAnywhere: 'Arrêter l’accès public', proxyStarting: 'Démarrage du proxy…' },
+  de: { settingsLabel: 'Handyzugriff', title: 'Handyzugriff', subtitle: 'Mit dem Handy scannen, um denselben Bildschirm synchron zu öffnen.', lan: 'LAN (gleiches WLAN)', lanHint: 'Handy mit demselben WLAN verbinden und scannen.', anywhere: 'Von überall', anywhereHint: 'Aus jedem Netzwerk erreichbar; die URL ändert sich nach jedem Neustart.', enableAnywhere: 'Externen Zugriff aktivieren', stopAnywhere: 'Öffentlichen Zugriff beenden', proxyStarting: 'Proxy wird gestartet…' },
+  'pt-BR': { settingsLabel: 'Acesso pelo celular', title: 'Acesso pelo celular', subtitle: 'Escaneie com o celular para abrir esta mesma tela e mantê-la sincronizada.', lan: 'LAN (mesmo Wi-Fi)', lanHint: 'Conecte o celular ao mesmo Wi-Fi e escaneie.', anywhere: 'De qualquer lugar', anywhereHint: 'Funciona em qualquer rede; a URL muda após cada reinicialização.', enableAnywhere: 'Ativar acesso externo', stopAnywhere: 'Parar acesso público', proxyStarting: 'Iniciando proxy…' },
+  ru: { settingsLabel: 'Доступ с телефона', title: 'Доступ с телефона', subtitle: 'Отсканируйте код телефоном, чтобы открыть этот экран с синхронизацией.', lan: 'LAN (та же Wi-Fi)', lanHint: 'Подключите телефон к той же Wi-Fi и отсканируйте код.', anywhere: 'Из любой сети', anywhereHint: 'Работает из любой сети; URL меняется после перезапуска.', enableAnywhere: 'Включить внешний доступ', stopAnywhere: 'Остановить публичный доступ', proxyStarting: 'Запуск прокси…' },
+  ar: { settingsLabel: 'الوصول من الهاتف', title: 'الوصول من الهاتف', subtitle: 'امسح الرمز بالهاتف لفتح الشاشة نفسها مع المزامنة المباشرة.', lan: 'الشبكة المحلية (Wi-Fi نفسه)', lanHint: 'صل الهاتف بشبكة Wi-Fi نفسها ثم امسح الرمز.', anywhere: 'من أي مكان', anywhereHint: 'يعمل من أي شبكة؛ يتغير الرابط بعد كل إعادة تشغيل.', enableAnywhere: 'تفعيل الوصول الخارجي', stopAnywhere: 'إيقاف الوصول العام', proxyStarting: 'جارٍ تشغيل الوكيل…' },
+  hi: { settingsLabel: 'फ़ोन से पहुँच', title: 'फ़ोन से पहुँच', subtitle: 'यही स्क्रीन खोलने और लाइव सिंक रखने के लिए फ़ोन से स्कैन करें।', lan: 'LAN (वही Wi-Fi)', lanHint: 'फ़ोन को उसी Wi-Fi से जोड़ें और स्कैन करें।', anywhere: 'कहीं से भी', anywhereHint: 'किसी भी नेटवर्क से चलता है; हर रीस्टार्ट के बाद URL बदलता है।', enableAnywhere: 'बाहरी पहुँच चालू करें', stopAnywhere: 'सार्वजनिक पहुँच रोकें', proxyStarting: 'प्रॉक्सी शुरू हो रहा है…' },
+};
+
+function PocketSettingsTab({ rpcCall, t }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -193,8 +210,8 @@ function PocketSettingsTab({ rpcCall }) {
   return h('div', { style: styles.card },
     h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
       h('div', null,
-        h('strong', null, '📱 手机访问 | Phone access'),
-        h('div', { style: styles.muted }, '手机扫码打开的就是电脑上的这个界面，实时同步 | the phone shows this exact screen, live'),
+        h('strong', null, `📱 ${t('title')}`),
+        h('div', { style: styles.muted }, t('subtitle')),
       ),
       h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-tertiary,#8b93a1)', textAlign: 'right' } },
         h('div', { style: { whiteSpace: 'nowrap' } }, '开发者：程序员少北晨'),
@@ -245,12 +262,12 @@ function PocketSettingsTab({ rpcCall }) {
 
     // 局域网
     h('div', { style: styles.block },
-      h('div', { style: { fontWeight: 600, fontSize: 13 } }, '📶 局域网（同一 WiFi）| LAN'),
+      h('div', { style: { fontWeight: 600, fontSize: 13 } }, `📶 ${t('lan')}`),
       lanUrl
         ? h('div', null,
           h('img', { src: status.lanQr, alt: 'LAN QR', style: styles.qr }),
           h('div', { style: styles.code }, lanUrl),
-          h('div', { style: styles.muted }, '手机连接同一 WiFi 后扫码即可打开'),
+          h('div', { style: styles.muted }, t('lanHint')),
           // 访问密码开关（issue #24）：默认开启；关闭后扫码直连（仅同一局域网设备可访问）
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 } },
             h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } }, '局域网访问密码 | LAN access PIN'),
@@ -273,26 +290,26 @@ function PocketSettingsTab({ rpcCall }) {
             : h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-state-warn-primary,#b45309)', lineHeight: 1.5 } },
               '🔓 密码已关闭：扫码直连，无需密码（仅同一局域网设备可访问；公网仍要密码）| PIN off — scan & go (LAN only; public still requires PIN)'),
         )
-        : h('div', { style: styles.muted }, '代理未就绪… | proxy starting…'),
+        : h('div', { style: styles.muted }, t('proxyStarting')),
     ),
 
     // 公网
     h('div', { style: styles.block },
-      h('div', { style: { fontWeight: 600, fontSize: 13 } }, '🌐 公网（人在外面）| Anywhere'),
+      h('div', { style: { fontWeight: 600, fontSize: 13 } }, `🌐 ${t('anywhere')}`),
       tunnelUrl
         ? h('div', null,
           h('img', { src: status.tunnelQr, alt: 'Tunnel QR', style: styles.qr }),
           h('div', { style: styles.code }, tunnelUrl),
-          h('div', { style: styles.muted }, '任何网络扫码即用（URL 每次重启自动换新）'),
+          h('div', { style: styles.muted }, t('anywhereHint')),
           h('div', { style: { ...styles.muted, marginTop: 4 } }, '📲 HTTPS 页面可在手机浏览器中“添加到主屏幕”，以独立 PWA 窗口打开；匿名隧道换域名后需重新添加。'),
           status.accessToken
             ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
               `🔐 访问密码：${status.accessToken}（每次开启公网变新；手机打开链接需输入此密码）| PIN: ${status.accessToken} — required on the phone`)
             : null,
-          h('button', { style: styles.btn, onClick: stopTunnel }, '关闭公网 | Stop'),
+          h('button', { style: styles.btn, onClick: stopTunnel }, t('stopAnywhere')),
         )
         : h('div', null,
-          h('button', { style: { ...styles.primary, margin: '8px 0' }, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? '开启中…' : '开启公网访问 | Enable anywhere'),
+          h('button', { style: { ...styles.primary, margin: '8px 0' }, onClick: startTunnel, disabled: busy || tunnelStarting }, busy ? t('proxyStarting') : t('enableAnywhere')),
           tunnelStarting
             ? h('div', { style: { marginTop: 4, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } },
               tunnelPhase === 'downloading'
@@ -321,6 +338,8 @@ export function apply(ctx) {
 
   const rpcCall = (endpoint, payload, signal) =>
     ctx.connection.rpc.call(POCKET_RPC_CHANNEL, endpoint, payload, signal);
+  ctx.effect(() => ctx.locale.register(POCKET_NS, pocketDictionaries), 'dsh-pocket: dictionaries');
+  const t = ctx.locale.bind(POCKET_NS);
 
   // 设置一级入口（与 通用设置/模型/插件 同级，order 1 = 通用之后、最外层）
   ctx.slots.inject('settings.section', () =>
@@ -329,8 +348,9 @@ export function apply(ctx) {
         name: 'settings.section',
         id: 'pocket',
         order: 1,
-        label: () => '手机访问',
-        inject: () => ({ rpcCall }),
+        label: () => t('settingsLabel'),
+        locale: POCKET_NS,
+        inject: () => ({ rpcCall, t }),
       },
       PocketSettingsTab,
     ),
