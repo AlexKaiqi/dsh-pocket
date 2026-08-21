@@ -175,6 +175,14 @@ function PocketSettingsTab({ rpcCall }) {
     } catch { /* 忽略 */ }
   };
 
+  // 局域网访问密码开关（issue #24）：默认开启；关闭后局域网扫码直连（公网不受影响）
+  const setLanAuth = async (on) => {
+    try {
+      const r = await call(POCKET_ENDPOINTS.lanAuthSetEnabled, { on });
+      setStatus((s) => ({ ...s, lanAuthEnabled: r.lanAuthEnabled }));
+    } catch { /* 忽略 */ }
+  };
+
   const lanUrl = status?.lanUrl;
   const tunnelUrl = status?.tunnelUrl;
   const tunnelPhase = tunnelState?.phase ?? 'idle';
@@ -243,14 +251,27 @@ function PocketSettingsTab({ rpcCall }) {
           h('img', { src: status.lanQr, alt: 'LAN QR', style: styles.qr }),
           h('div', { style: styles.code }, lanUrl),
           h('div', { style: styles.muted }, '手机连接同一 WiFi 后扫码即可打开'),
-          status.lanToken
+          // 访问密码开关（issue #24）：默认开启；关闭后扫码直连（仅同一局域网设备可访问）
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 } },
+            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)' } }, '局域网访问密码 | LAN access PIN'),
+            h('button', {
+              style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status?.lanAuthEnabled !== false ? 600 : 400, background: status?.lanAuthEnabled !== false ? 'var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary,#4f6ef7))' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status?.lanAuthEnabled !== false ? 'var(--dsw-alias-label-primary-foreground, #fff)' : 'var(--dsw-alias-label-primary,inherit)' },
+              onClick: () => setLanAuth(true),
+            }, '开 | On'),
+            h('button', {
+              style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12, fontWeight: status?.lanAuthEnabled === false ? 600 : 400, background: status?.lanAuthEnabled === false ? 'var(--dsw-alias-state-error-primary,#dc2626)' : 'var(--dsw-alias-bg-layer-1,#fff)', color: status?.lanAuthEnabled === false ? '#fff' : 'var(--dsw-alias-label-primary,inherit)' },
+              onClick: () => setLanAuth(false),
+            }, '关 | Off'),
+          ),
+          status?.lanAuthEnabled !== false
             ? h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#6b7280)', lineHeight: 1.5 } },
               '🔐 访问密码：',
               status.lanToken,
               '（手机打开需输入；与公网密码分开）',
               h('button', { style: { ...styles.btn, height: 26, padding: '0 10px', fontSize: 12, marginLeft: 8 }, onClick: refreshLanPin }, '刷新 | Refresh'),
             )
-            : null,
+            : h('div', { style: { marginTop: 6, fontSize: 12, color: 'var(--dsw-alias-state-warn-primary,#b45309)', lineHeight: 1.5 } },
+              '🔓 密码已关闭：扫码直连，无需密码（仅同一局域网设备可访问；公网仍要密码）| PIN off — scan & go (LAN only; public still requires PIN)'),
         )
         : h('div', { style: styles.muted }, '代理未就绪… | proxy starting…'),
     ),

@@ -351,6 +351,20 @@ test('压缩：大 JSON 响应流式 gzip（客户端解压内容一致）；SSE
     });
     assert.equal(raw4.headers['content-encoding'], undefined, '无 Accept-Encoding 不压缩');
     assert.equal(raw4.body.toString('utf8'), big, '明文透传');
+
+    // 5) Accept-Encoding: gzip, br → 优先 brotli（quality 6），可解压且内容一致
+    const raw5 = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/api/session.history', headers: { 'Accept-Encoding': 'gzip, br' } }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(raw5.headers['content-encoding'], 'br', 'br 优先于 gzip');
+    assert.ok(!(raw5.body[0] === 0x1f && raw5.body[1] === 0x8b), '不是 gzip 字节');
+    assert.equal(zlib.brotliDecompressSync(raw5.body).toString('utf8'), big, 'brotli 解压后内容一致');
   } finally {
     await proxy.close();
     await new Promise((r) => up.close(r));
@@ -436,6 +450,45 @@ test('访问令牌认证（issue #13）：公网需登录、cookie 放行、局�
 
   await proxy.close();
   await new Promise((r) => up.close(r));
+});
+
+test('访问令牌按 Host 区分（issue #24）：局域网开关关闭 → 免密直连；公网始终要密码', async () => {
+  const http = await import('node:http');
+  const TOKEN = '12345678';
+  const up = createServer((req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end('<html><body>dsh</body></html>');
+  });
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  // 模拟 lanAuthEnabled=false 时的 isProtected：公网永远保护，局域网不保护
+  const proxy = await createPocketProxy({
+    port: 0, host: '127.0.0.1',
+    upstream: { host: '127.0.0.1', port: up.address().port },
+    auth: { getToken: () => TOKEN, isProtected: (host) => /trycloudflare\.com$/i.test(String(host ?? '')) },
+  });
+  const raw = (headers) => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: proxy.port, path: '/', headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  try {
+    // 1) 局域网（非公网域名）无 cookie → 直接放行（免密直连）
+    const lan = await raw({ Host: '192.168.1.50:3081', Accept: 'text/html' });
+    assert.equal(lan.status, 200);
+    assert.ok(lan.body.includes('<html>'), '局域网内容直达，无登录页');
+
+    // 2) 公网域名无 cookie → 仍要登录页（公网不受开关影响）
+    const pub = await raw({ Host: 'abc.trycloudflare.com', Accept: 'text/html' });
+    assert.equal(pub.status, 200);
+    assert.ok(pub.body.includes('访问密码'), '公网仍返回登录页');
+  } finally {
+    await proxy.close();
+    await new Promise((r) => up.close(r));
+  }
 });
 
 test('advancedNoticeScript：注入 advanced 模式提示覆盖层（issue #19）', async () => {

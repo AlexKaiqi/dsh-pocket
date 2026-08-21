@@ -9,6 +9,7 @@ export const POCKET_ENDPOINTS = Object.freeze({
   update: 'pocket.update',
   restart: 'pocket.restart',
   lanTokenRefresh: 'token.lanRefresh',
+  lanAuthSetEnabled: 'lanAuth.setEnabled',
 });
 
 /** 语义化版本比较：a > b 返回正数，相等 0，a < b 负数（数字段 + 预发布后缀）。 */
